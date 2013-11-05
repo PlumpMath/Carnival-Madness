@@ -1,0 +1,48 @@
+<CoordinateSystem> { y-up-left }
+
+<Texture> parkgroundTextureMap { "maps/parkgroundTextureMap.tif"
+	<Scalar> format { rgb }
+	<Scalar> wrap { repeat }
+}
+
+<Group> ParkGround {
+	<Transform> {
+		<Matrix4> { 
+			3.2808398950131235 0.0 0.0 0.0 
+			0.0 3.2808398950131235 0.0 0.0 
+			0.0 0.0 3.2808398950131235 0.0 
+			0.0 0.0 0.0 1.0 
+		}
+	}
+	<VertexPool> ParkGround.verts {
+		<Vertex> 0 { 729.0753041665386 0.0 729.0753041665386
+			<Normal> { 0.0 3.2808398950131235 0.0 }
+			<UV> { 0.0 0.0 }
+		}
+		<Vertex> 1 { 729.0753041665386 0.0 -729.0753041665386
+			<Normal> { 0.0 3.2808398950131235 0.0 }
+			<UV> { 0.0 1.0 }
+		}
+		<Vertex> 2 { -729.0753041665386 0.0 -729.0753041665386
+			<Normal> { 0.0 3.2808398950131235 0.0 }
+			<UV> { 1.0 1.0 }
+		}
+		<Vertex> 3 { -729.0753041665386 0.0 729.0753041665386
+			<Normal> { 0.0 3.2808398950131235 0.0 }
+			<UV> { 1.0 0.0 }
+		}
+	}
+	<Polygon>  {
+		<TRef> { parkgroundTextureMap }
+		<RGBA> { 1.0 1.0 1.0 1.0 }
+		<BFace> { 0 }
+		<VertexRef> { 2 1 0 <Ref> { ParkGround.verts } }
+	}
+	<Polygon>  {
+		<TRef> { parkgroundTextureMap }
+		<RGBA> { 1.0 1.0 1.0 1.0 }
+		<BFace> { 0 }
+		<VertexRef> { 3 2 0 <Ref> { ParkGround.verts } }
+	}
+}
+
