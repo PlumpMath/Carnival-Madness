@@ -6,7 +6,7 @@ from direct.task import Task
 from direct.actor.Actor import Actor
 from panda3d.core import Filename, AmbientLight, DirectionalLight, PointLight, Spotlight
 from panda3d.core import PandaNode,NodePath,Camera,TextNode, PerspectiveLens
-from panda3d.core import Vec3, Vec4, BitMask32, VBase4, AudioSound
+from panda3d.core import Vec3, Vec4, BitMask32, VBase4, AudioSound, WindowProperties
 from direct.interval.IntervalGlobal import Sequence, Parallel
 from panda3d.core import Point3, CollisionPlane, Plane
 from direct.gui.OnscreenImage import OnscreenImage
@@ -41,6 +41,12 @@ class MyApp(ShowBase):
 		self.nearHouse = False
 		self.lights = False
 		self.pose = False
+		
+		#Disable Camera change by mouse and hide mouse pointer
+		base.disableMouse()
+		props = WindowProperties()
+		props.setCursorHidden(True) 
+		base.win.requestProperties(props)
 		
 		#self.loader.loadMusic('music/musicbox.ogg')
 		self.song = self.loader.loadSfx("audio/horror.ogg")
@@ -343,6 +349,8 @@ class MyApp(ShowBase):
 		self.rotateLeft = False
 		self.rotateRight = False
 		self.myAnimControl = self.boy.getAnimControl('run')
+		self.y = 30
+		self.z = 13
 		
 		self.jets = self.loader.loadModel("models/GreenJumpJet")
 		self.jets.reparentTo(self.boy)
@@ -427,6 +435,8 @@ class MyApp(ShowBase):
 		self.accept("e",self.switchToJet)
 		self.accept("escape", sys.exit)
 		self.accept("l",self.changeLights)
+		self.accept("wheel_up",self.keys, ["wheel_up"])
+		self.accept("wheel_down", self.keys, ["wheel_down"])
 		
 		#Turn on ambient and directional Light for better graphics
 		ambientLight = AmbientLight("ambientLight")
@@ -561,8 +571,29 @@ class MyApp(ShowBase):
 		self.camera.setHpr(angleDegrees, 0, 0)
 		return Task.cont
 	      
+	def keys(self,action):
+	  #If camera goes away then Y should change faster while if it comes near then Z should change faster
+		if action == "wheel_down":
+			self.y = self.y - 2.5
+			self.z = self.z - 5
+			if self.y < 30:
+				self.y = 30
+			if self.z < 13:
+				self.z = 13
+		elif action == "wheel_up":
+			self.y = self.y + 5
+			self.z = self.z + 2
+			if self.y > 160:
+				self.y = 160
+			if self.z > 50:
+				self.z = 50
+	      
 	def cameraLightCollisionTask(self,task):
-		base.camera.setPos(self.boy.getX(),self.boy.getY() - 80, 13)
+		base.camera.setPos(self.boy.getX(),self.boy.getY() - self.y, self.z)
+		
+		if base.mouseWatcherNode.hasMouse():
+			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
+			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
 		#if self.song.status() == AudioSound.BAD:
 		#	print "BAD"
 		#elif self.song.status() == AudioSound.READY:
@@ -627,7 +658,7 @@ class MyApp(ShowBase):
 					self.nearHouse = True
 					
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2]-2)
+					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2]-2.5)
 					nearBridge = True
 					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
 			if not (self.nearCarousel or self.nearHouse or self.nearOctopus or self.nearSkyride or self.nearTent or nearBridge):
