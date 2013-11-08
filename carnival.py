@@ -1,4 +1,5 @@
 from math import pi, sin, cos
+from direct.showbase.Transitions import Transitions
 from pandac.PandaModules import loadPrcFileData
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBase import ShowBase
@@ -6,29 +7,35 @@ from direct.task import Task
 from direct.actor.Actor import Actor
 from panda3d.core import Filename, AmbientLight, DirectionalLight, PointLight, Spotlight
 from panda3d.core import PandaNode,NodePath,Camera,TextNode, PerspectiveLens
-from panda3d.core import Vec3, Vec4, BitMask32, VBase4, AudioSound, WindowProperties
+from panda3d.core import Vec3, Vec4, BitMask32, VBase4, AudioSound, WindowProperties, LVecBase4f
 from direct.interval.IntervalGlobal import Sequence, Parallel
 from panda3d.core import Point3, CollisionPlane, Plane
 from direct.gui.OnscreenImage import OnscreenImage
 from panda3d.core import TransparencyAttrib
 import sys
+from direct.gui.DirectGui import *
 from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionSphere, CollisionTraverser
+ 
+START_BUT_TEXT = "PLAY"
+EXIT_BUT_TEXT = "EXIT"
+OPTION_BUT_TEXT = "PREFERENCES"
+CREDITS_BUT_TEXT = "ABOUT US"
  
 class MyApp(ShowBase):
 	def __init__(self):
 		ShowBase.__init__(self)
 		
 		#Set background Image
-		imageObject = OnscreenImage(image = 'image/nature.jpg', pos = (0, 0, 0), scale = 2)
+		imageObject = OnscreenImage(parent = render2dp, image = 'image/nature.jpg', pos = (0, 0, 0), scale = 1)
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		base.cam.node().getDisplayRegion(0).setSort(20)
+		base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#To show 2D text on Screen
-		textObject = OnscreenText(text = 'Carnival & Ralph!', pos = (0.1, 0.9), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
-		textObject = OnscreenText(text = '[Esc] To EXIT', pos = (-1, 0.9), scale = 0.06)
-		textObject = OnscreenText(text = '[V]To SWAP VIEW', pos = (-1, 0.80), scale = 0.06)
-		textObject = OnscreenText(text = '[Arrow Keys]To MOVE', pos = (-1, 0.70), scale = 0.06)
-		textObject = OnscreenText(text = '[L]toggle LIGHTS', pos = (-1, 0.60), scale = 0.06)
-		textObject = OnscreenText(text = '[E]USE', pos = (-1, 0.50), scale = 0.06)
+		#textObject = OnscreenText(text = 'Carnival & Ralph!', pos = (0.1, 0.9), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		#textObject = OnscreenText(text = '[Esc] To EXIT', pos = (-1, 0.9), scale = 0.06)
+		#textObject = OnscreenText(text = '[V]To SWAP VIEW', pos = (-1, 0.80), scale = 0.06)
+		#textObject = OnscreenText(text = '[Arrow Keys]To MOVE', pos = (-1, 0.70), scale = 0.06)
+		#textObject = OnscreenText(text = '[L]toggle LIGHTS', pos = (-1, 0.60), scale = 0.06)
+		#textObject = OnscreenText(text = '[E]USE', pos = (-1, 0.50), scale = 0.06)
 		#To show the FPS
 		loadPrcFileData('','show-frame-rate-meter 1')
 		
@@ -41,17 +48,451 @@ class MyApp(ShowBase):
 		self.nearHouse = False
 		self.lights = False
 		self.pose = False
+		self.nearBridge = False
 		
-		#Disable Camera change by mouse and hide mouse pointer
+		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
 		base.disableMouse()
-		props = WindowProperties()
-		props.setCursorHidden(True) 
-		base.win.requestProperties(props)
 		
 		#self.loader.loadMusic('music/musicbox.ogg')
 		self.song = self.loader.loadSfx("audio/horror.ogg")
-		self.song.setVolume(1)
+		self.butHoverSound = self.loader.loadSfx("audio/but_hover.wav")
+		#self.butClickSound = self.loader.loadSfx("audio/but_hover.wav")
+		self.song.setVolume(0.5)
 		
+		#Load all the Models and Actors
+		self.loadAllModels()
+		
+		#Set up the Collision Nodes 
+		self.setupCollisionNodes()
+		
+		#Set initial Camera Distance from Ralph
+		self.y = 30
+		self.z = 13		
+		
+		#Start all the animations in the environment
+		self.animatethings()
+		
+		#Add the task to move boy and rotate camera to get world View
+		self.taskMgr.add(self.boyMoveTask, "BoyMoveTask")
+		self.taskMgr.add(self.cameraLightCollisionTask, "cameraLightCollisionTask")
+		
+		#Write all the methods to be done when you press a key!
+		self.accept("arrow_left-repeat", self.keyLeft)
+		self.accept("arrow_right-repeat", self.keyRight)
+		self.accept("arrow_up-repeat",self.keyUp)
+		self.accept("arrow_down-repeat", self.keyDown)
+		self.accept("arrow_down-up", self.stopWalk)
+		self.accept("arrow_up-up",self.stopWalk)
+		self.accept("arrow_left-up",self.stopWalk)
+		self.accept("arrow_right-up",self.stopWalk)
+		#self.accept("v",self.switchView)
+		self.accept("e",self.switchToJet)
+		self.accept("escape", self.switchView)
+		self.accept("l",self.changeLights)
+		self.accept("wheel_up",self.keys, ["wheel_up"])
+		self.accept("wheel_down", self.keys, ["wheel_down"])
+		
+		#Turn on ambient and directional Light for better graphics
+		self.ambientLight = AmbientLight("ambientLight")
+		self.ambientLight.setColor(Vec4(.4, .4, .4, 1))
+		self.directionalLight = DirectionalLight("directionalLight")
+		self.directionalLight.setDirection(Vec3(-5, -5, -5))
+		self.directionalLight.setColor(Vec4(1, 1, 1, 1))
+		self.directionalLight.setSpecularColor(Vec4(1, 1, 1, 1))
+		self.aLight = self.render.attachNewNode(self.ambientLight);
+		self.dLight = self.render.attachNewNode(self.directionalLight)
+		self.hutLight = self.tent.attachNewNode(PointLight('tentLight'))
+		self.hutLight.setPos(0,0,120)
+		
+		#Turn on the light effects and set world view for background of GUI
+		self.switchView()
+		self.changeLights()
+		
+	def animatethings(self):
+		
+		seq1 = self.hawk.posInterval(4, Point3(250, 250, 50))
+		seq3 = self.hawk.posInterval(4, Point3(-250, 250, 50))
+		seq2 = self.hawk.hprInterval(0.1, Point3(80, 0, 0), startHpr = Point3(50, 0, 0))
+		seq4 = self.hawk.hprInterval(0.1, Point3(70, 0, 0), startHpr = Point3(120, 0, 0))
+		seq5 = self.hawk.posInterval(2, Point3(-100, 250, 30))
+		seq6 = self.hawk.hprInterval(0.1, Point3(80, 0, 0), startHpr = Point3(50, 0, 0))
+		seq7 = self.hawk.posInterval(4, Point3(250, 20, 20))
+		seq8 = self.hawk.hprInterval(0.1, Point3(70, 0, 0), startHpr = Point3(120, 0, 0))
+		seq9 = self.hawk.posInterval(4, Point3(0, 0, 100))
+		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
+		seq.loop()
+		#if not self.worldView:
+			#seq.loop()
+		#else:
+			#if seq.isPlaying():
+				#seq.pause()
+		
+		seq1 = self.hawk1.posInterval(4, Point3(-100, 50, 50))
+		seq3 = self.hawk1.posInterval(4, Point3(-50, 250, 50))
+		seq2 = self.hawk1.hprInterval(0.1, Point3(30, 0, 0), startHpr = Point3(50, 0, 0))
+		seq4 = self.hawk1.hprInterval(0.1, Point3(90, 0, 0), startHpr = Point3(120, 0, 0))
+		seq5 = self.hawk1.posInterval(2, Point3(-200, 150, 50))
+		seq6 = self.hawk1.hprInterval(0.1, Point3(60, 0, 0), startHpr = Point3(50, 0, 0))
+		seq7 = self.hawk1.posInterval(4, Point3(200, 200, 50))
+		seq8 = self.hawk1.hprInterval(0.1, Point3(190, 0, 0), startHpr = Point3(120, 0, 0))
+		seq9 = self.hawk1.posInterval(4, Point3(200, 0, 100))
+		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
+		seq.loop()
+		#if not self.worldView:
+			#seq.loop()
+		#else:
+			#if seq.isPlaying():
+				#seq.pause()
+		
+		seq1 = self.flamingo.posInterval(6, Point3(30, 70, 0))
+		seq3 = self.flamingo.posInterval(2, Point3(70, 80, 0))
+		seq2 = self.flamingo.hprInterval(2, Point3(-90, 0, 0), startHpr = Point3(0, 0, 0))
+		seq4 = self.flamingo.hprInterval(0.1, Point3(-180, 0, 0), startHpr = Point3(-90, 0, 0))
+		seq5 = self.flamingo.posInterval(2, Point3( 60, 50, 0))
+		seq6 = self.flamingo.hprInterval(0.1, Point3(-270, 0, 0), startHpr = Point3(-180, 0, 0))
+		seq7 = self.flamingo.posInterval(4, Point3(15, 50, 0))
+		seq8 = self.flamingo.hprInterval(1, Point3( -180, 0, 0), startHpr = Point3(-270, 0, 0))
+		seq9 = self.flamingo.posInterval(4, Point3(15, -10,0))
+		seq10 = self.flamingo.hprInterval(1, Point3(-90, 0, 0), startHpr = Point3(-180, 0, 0))
+		seq11 = self.flamingo.posInterval(4, Point3(30, -10, 0))
+		seq12 = self.flamingo.hprInterval(1, Point3(0, 0, 0), startHpr = Point3(-90, 0, 0))
+		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9, seq10, seq11, seq12)
+		seq.loop()
+		#if not self.worldView:
+			#seq.loop()
+		#else:
+			#if seq.isPlaying():
+				#seq.pause()
+		
+		seq1 = self.blueBird.posInterval(8, Point3(-250, 200, 50))
+		seq3 = self.blueBird.posInterval(8, Point3(-250, -200, 50))
+		seq2 = self.blueBird.hprInterval(1, Point3(50, 0, 0), startHpr = Point3(0, 0, 0))
+		seq4 = self.blueBird.hprInterval(1, Point3(30, 0, 0), startHpr = Point3(50, 0, 0))
+		seq5 = self.blueBird.posInterval(5, Point3(-200, 150, 50))
+		seq6 = self.blueBird.hprInterval(1, Point3(60, 0, 0), startHpr = Point3(50, 0, 0))
+		seq7 = self.blueBird.posInterval(4, Point3(200, 200, 50))
+		seq8 = self.blueBird.hprInterval(1, Point3(190, 0, 0), startHpr = Point3(120, 0, 0))
+		seq9 = self.blueBird.posInterval(5, Point3(200, 0, 100))
+		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
+		seq.loop()
+		#if not self.worldView:
+			#seq.loop()
+		#else:
+			#if seq.isPlaying():
+				#seq.pause()
+		
+		seq1 = self.Dropship.posInterval(3, Point3(-50, -120, 40))
+		seq2 = self.Dropship.posInterval(4, Point3(-50, 70, 40))
+		seq3 = self.Dropship.posInterval(3, Point3(-50, 130, 13))
+		seq4 = self.Dropship.hprInterval(1, Point3( 180, 0, 0), startHpr = Point3(0, 0, 0))
+		seq5 = self.Dropship.posInterval(3, Point3(-50, 70, 40))
+		seq6 = self.Dropship.posInterval(4, Point3(-50, -120, 40))
+		seq7 = self.Dropship.posInterval(3, Point3(-50, -160, 13))
+		seq8 = self.Dropship.hprInterval(1, Point3( 180, 0, 0), startHpr = Point3(0, 0, 0))
+		self.skyRideSeq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8)
+		self.skyRideSeq.loop()
+		#if not self.worldView:
+			#self.skyRideSeq.loop()
+		#else:
+			#if self.skyRideSeq.isPlaying():
+				#self.skyRideSeq.stop()
+	
+	def changeLights(self):
+		if self.lights == False:
+			self.render.setLight(self.aLight)
+			self.render.setLight(self.dLight)
+			self.lights = True
+		else:
+			self.render.clearLight(self.aLight)
+			self.render.clearLight(self.dLight)
+			self.lights = False
+		
+	def climbOnJet(self):
+		x = self.boy.getX(); y = self.boy.getY(); 
+		x1 = self.jets.getX(); y1 = self.jets.getY(); 
+		if self.hasJet:
+			seq1 = self.boy.posInterval(1, Point3( x, y, 10))
+			seq2 = self.jets.posInterval(1, Point3( 0, 0, 0))
+			seq = Parallel(seq1, seq2)
+			seq.start()
+		else:
+			seq1 = self.boy.posInterval(0.05, Point3( x, y, 15))
+			par1 = self.boy.posInterval(0.5, Point3( x, y, 0))
+			par2 = self.jets.posInterval(0.5, Point3( 0, -800, 350))
+			seq = Sequence(seq1)
+			seq.start()
+			par = Parallel(par1, par2)
+			par.start()
+		return		
+	      
+	def switchToJet(self):
+		if self.hasJet:
+		      self.hasJet = False
+		      self.climbOnJet()
+		else:
+		      self.jets.setScale(0.4)
+		      self.hasJet = True
+		      self.climbOnJet()
+		return
+	      
+	def switchView(self):
+		if self.worldView:
+			taskMgr.remove("SpinCameraTask")
+			self.worldView = False
+			props = WindowProperties()
+			props.setCursorHidden(True) 
+			base.win.requestProperties(props)
+			self.ambientLight.setColor(Vec4(.3, .3, .3, 1))
+			self.directionalLight.setDirection(Vec3(-5, -5, -5))
+			
+			self.startBut.hide(); self.exitBut.hide(); self.optiontBut.hide(); self.aboutBut.hide()
+			self.transit.letterboxOff(2.5)
+		else:
+			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+			self.worldView = True
+			props = WindowProperties()
+			props.setCursorHidden(False) 
+			base.win.requestProperties(props)
+			self.ambientLight.setColor(Vec4(.1, .1, .1, 1))
+			self.directionalLight.setDirection(Vec3( 5, 5, 5))	
+			
+			self.startBut.show(); self.exitBut.show(); self.optiontBut.show(); self.aboutBut.show()
+			self.transit.letterboxOn(2.5)
+			#Transitions(loader).fadeScreenColor(LVecBase4f(0.1,0.1,0.1,1))
+
+	def spinCameraTask(self, task):
+		angleDegrees = task.time * 6.0
+		angleRadians = angleDegrees * (pi / 180.0)
+		self.camera.setPos(320 * sin(angleRadians), -320.0 * cos(angleRadians), 30)
+		self.camera.setHpr(angleDegrees, 0, 0)
+		return Task.cont
+	      
+	def keys(self,action):
+	  #If camera goes away then Y should change faster while if it comes near then Z should change faster
+		if action == "wheel_down":
+			self.y = self.y - 2.5
+			self.z = self.z - 5
+			if self.y < 30:
+				self.y = 30
+			if self.z < 13:
+				self.z = 13
+		elif action == "wheel_up":
+			self.y = self.y + 5
+			self.z = self.z + 2
+			if self.y > 160:
+				self.y = 160
+			if self.z > 50:
+				self.z = 50
+	      
+	def cameraLightCollisionTask(self,task):
+		base.camera.setPos(self.boy.getX(),self.boy.getY() - self.y, self.z)
+		
+		if base.mouseWatcherNode.hasMouse() and not self.worldView:
+			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
+			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
+		#if self.song.status() == AudioSound.BAD:
+		#	print "BAD"
+		#elif self.song.status() == AudioSound.READY:
+		#	print "READY"
+		#else:
+		#	print "PLAYING"
+		
+		if self.nearCarousel:
+			angleDegrees = task.time * 12.0
+			angleRadians = angleDegrees * (pi / 180.0)
+			self.carousel.setHpr(angleDegrees, 0, 0)
+		if self.nearOctopus:
+			angleDegrees = task.time * 12.0
+			angleRadians = angleDegrees * (pi / 180.0)
+			self.octopus.setHpr(angleDegrees, 0, 0)
+		if self.nearTent:
+			self.tent.setLight(self.hutLight)
+		else:
+			self.tent.clearLight(self.hutLight)
+			
+		if self.nearSkyride:
+			self.skyRideSeq.pause()
+		else:
+			if not self.skyRideSeq.isPlaying():
+				self.skyRideSeq.resume()
+				
+		if self.nearHouse:
+			if not self.song.status() == AudioSound.PLAYING:
+				self.song.play()
+			self.sfxManagerList[0].update()
+		else:
+			if self.song.status() == self.song.PLAYING:
+				self.song.stop()
+				
+		if not self.nearBridge:
+			self.boy.setZ(0)
+			
+		self.cTrav.traverse(render)
+		self.collisionHandler1.sortEntries()
+		if self.collisionHandler1.getNumEntries() == 0:
+			self.startPos = self.boy.getPos()
+			self.nearCarousel = False
+			self.nearOctopus = False
+			self.nearSkyride = False
+			self.nearTent = False
+			self.nearHouse = False
+			self.nearBridge = False
+			#self.pose = False
+		else:
+			#self.nearBridge = False
+			for i in range(self.collisionHandler1.getNumEntries()):
+				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
+				#print entry
+				if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearCarousel = True
+				elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearOctopus = True
+				elif "cTentNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearTent = True
+				elif "cSkyrideNode1" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName() or "cSkyrideNode2" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearSkyride = True
+				elif "cHouseNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearHouse = True
+					
+				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2]-2.5)
+					self.nearBridge = True
+					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
+			if not (self.nearCarousel or self.nearHouse or self.nearOctopus or self.nearSkyride or self.nearTent or self.nearBridge):
+			#if (self.nearCarousel and self.pose):
+				self.boy.setPos(self.startPos)
+		return Task.cont
+
+#These are the methods to move Ralph from his position as per the arrow keys
+	def boyMoveTask(self, task):
+		if self.isMoving and not self.hasJet:
+			if not self.myAnimControl.isPlaying():
+				self.boy.loop("run")
+		if not self.isMoving:
+			if self.rotateBack:
+				self.boy.setH(self.boy.getH() + 10)
+				if self.boy.getH() % 180 == 0:
+					self.rotateBack = False
+			elif self.rotateRight:
+				self.boy.setH(self.boy.getH() + 10)
+				if self.boy.getH() % 180 == 0:
+					self.rotateRight = False
+			elif self.rotateLeft:
+				self.boy.setH(self.boy.getH() - 10)
+				if self.boy.getH() % 180 == 0:
+					self.rotateLeft = False
+			else:
+				self.boy.pose("walk", 5)
+		return Task.again
+		
+	def keyUp(self):
+		self.boy.setY(self.boy.getY() + 2)
+		self.isMoving = True
+	
+	def keyDown(self):
+		if not self.rotateBack:
+			self.boy.setH(self.boy.getH() + 10)
+			#base.camera.setH(self.boy.getH()+10)
+			if self.boy.getH() % 180 == 0:
+				self.rotateBack = True
+		else:
+			self.boy.setY(self.boy.getY() - 2)
+			self.isMoving = True
+		
+	def stopWalk(self):
+		self.isMoving = False
+	
+	def keyLeft(self):
+		if not self.rotateLeft:
+			self.boy.setH(self.boy.getH() + 10)
+			if self.boy.getH() % 90 == 0:
+				self.rotateLeft = True
+		else:
+			self.boy.setX(self.boy.getX() - 2)
+			self.isMoving = True  
+		
+	def keyRight(self):
+		if not self.rotateRight:
+			self.boy.setH(self.boy.getH() - 10)
+			if self.boy.getH() % 90 == 0:
+				self.rotateRight = True
+		else:
+			self.boy.setX(self.boy.getX() + 2)
+			self.isMoving = True 
+			
+	def setupCollisionNodes(self):
+		#Collision Nodes are created here and attached to spheres
+		self.cBoy = self.boy.attachNewNode(CollisionNode('cBoyNode'))
+		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
+		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
+		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
+		self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
+		self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
+		self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
+		self.cCarousel.node().addSolid(CollisionSphere(0, 0, 0, 30))
+		self.cOctopus = self.octopus.attachNewNode(CollisionNode('cOctopusNode'))
+		self.cOctopus.node().addSolid(CollisionSphere(0, 0, 0, 65))
+		self.cTent = self.tent.attachNewNode(CollisionNode('cTentNode'))
+		self.cTent.node().addSolid(CollisionSphere(0, 0, 0, 65))
+		self.cCoaster = self.coaster.attachNewNode(CollisionNode('cCoasterNode'))
+		self.cCoaster.node().addSolid(CollisionSphere(0, 0, 0, 170))
+		self.cBridge = self.bridge.attachNewNode(CollisionNode('cBridge'))
+		self.cBridge.node().addSolid(CollisionSphere(0, 0, 0, 25))
+		self.cRingtoss = self.ringToss.attachNewNode(CollisionNode('cRingtoss'))
+		self.cRingtoss.node().addSolid(CollisionSphere(0, 0, 0, 100))
+		
+		self.cSkyride1 = self.skyRide.attachNewNode(CollisionNode('cSkyrideNode1'))
+		self.cSkyride1.node().addSolid(CollisionSphere(0, -250, 0, 40))
+		
+		self.cSkyride2 = self.skyRide.attachNewNode(CollisionNode('cSkyrideNode2'))
+		self.cSkyride2.node().addSolid(CollisionSphere(0, 250, 0, 40))
+		
+		self.cPond = self.pGround.attachNewNode(CollisionNode('cPond'))
+		self.cPond.node().addSolid(CollisionSphere(-50, 100, 0, 70))
+		self.cPond1 = self.pGround.attachNewNode(CollisionNode('cPond1'))
+		self.cPond1.node().addSolid(CollisionSphere(-220, -200, 0, 100))
+		
+		self.cFence = self.fence.attachNewNode(CollisionNode('cFence'))
+		self.cFence.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
+		self.cFence1 = self.fence1.attachNewNode(CollisionNode('cFence1'))
+		self.cFence1.node().addSolid(CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0))))
+		self.cFence2 = self.fence2.attachNewNode(CollisionNode('cFence2'))
+		self.cFence2.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
+		self.cFence3 = self.fence3.attachNewNode(CollisionNode('cFence3'))
+		self.cFence3.node().addSolid(CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0))))
+		#Uncomment this lines to see the collision spheres
+		#self.cStall.show()
+		#self.cHouse.show()
+		#self.cCarousel.show()
+		#self.cBoy.show()
+		#self.cOctopus.show()
+		#self.cCoaster.show()
+		#self.cPond.show()
+		#self.cPond1.show()
+		#self.cFence.show()
+		#self.cFence1.show()
+		#self.cFence2.show()
+		#self.cFence3.show()
+		#self.cRingtoss.show()
+		#self.cTent.show()
+		#self.cSkyride1.show()
+		#self.cSkyride2.show()
+		
+		self.cTrav=CollisionTraverser()
+		self.collisionHandler1 = CollisionHandlerQueue()
+		self.cTrav.addCollider(self.cBoy, self.collisionHandler1)
+	
+	def quit(self):
+		taskMgr.doMethodLater(2.6 ,sys.exit,'Exiting')
+		self.transit.irisOut(2.5)
+	
+	def loadAllModels(self):
+	  
+		#FadeIn the First Time when app starts
+		self.transit = Transitions(loader)
+		self.transit.irisIn(2.5)
+			
+		#All the actors, models are loaded here 
 		self.pGround = self.loader.loadModel("models/ParkGround")
 		self.pGround.reparentTo(self.render)
 		self.pGround.setPos(0,0,0)
@@ -349,383 +790,19 @@ class MyApp(ShowBase):
 		self.rotateLeft = False
 		self.rotateRight = False
 		self.myAnimControl = self.boy.getAnimControl('run')
-		self.y = 30
-		self.z = 13
 		
 		self.jets = self.loader.loadModel("models/GreenJumpJet")
 		self.jets.reparentTo(self.boy)
 		self.jets.setPos(0, 500, 10)
 		self.jets.setZ(0)
 		self.jets.setHpr(180,0,0)
-			
-		#Collision Nodes are created here and attached to spheres
-		self.cBoy = self.boy.attachNewNode(CollisionNode('cBoyNode'))
-		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
-		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
-		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
-		self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
-		self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
-		self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
-		self.cCarousel.node().addSolid(CollisionSphere(0, 0, 0, 30))
-		self.cOctopus = self.octopus.attachNewNode(CollisionNode('cOctopusNode'))
-		self.cOctopus.node().addSolid(CollisionSphere(0, 0, 0, 65))
-		self.cTent = self.tent.attachNewNode(CollisionNode('cTentNode'))
-		self.cTent.node().addSolid(CollisionSphere(0, 0, 0, 65))
-		self.cCoaster = self.coaster.attachNewNode(CollisionNode('cCoasterNode'))
-		self.cCoaster.node().addSolid(CollisionSphere(0, 0, 0, 170))
-		self.cBridge = self.bridge.attachNewNode(CollisionNode('cBridge'))
-		self.cBridge.node().addSolid(CollisionSphere(0, 0, 0, 25))
-		self.cRingtoss = self.ringToss.attachNewNode(CollisionNode('cRingtoss'))
-		self.cRingtoss.node().addSolid(CollisionSphere(0, 0, 0, 100))
 		
-		self.cSkyride1 = self.skyRide.attachNewNode(CollisionNode('cSkyrideNode1'))
-		self.cSkyride1.node().addSolid(CollisionSphere(0, -250, 0, 40))
+		#Set up the main GUI Menu shown at the startup
+		maps = loader.loadModel('models/button_maps')
+		self.startBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = START_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchView)
+		self.exitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = EXIT_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.quit)
+		self.optiontBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
+		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
 		
-		self.cSkyride2 = self.skyRide.attachNewNode(CollisionNode('cSkyrideNode2'))
-		self.cSkyride2.node().addSolid(CollisionSphere(0, 250, 0, 40))
-		
-		self.cPond = self.pGround.attachNewNode(CollisionNode('cPond'))
-		self.cPond.node().addSolid(CollisionSphere(-50, 100, 0, 70))
-		self.cPond1 = self.pGround.attachNewNode(CollisionNode('cPond1'))
-		self.cPond1.node().addSolid(CollisionSphere(-220, -200, 0, 100))
-		
-		self.cFence = self.fence.attachNewNode(CollisionNode('cFence'))
-		self.cFence.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
-		self.cFence1 = self.fence1.attachNewNode(CollisionNode('cFence1'))
-		self.cFence1.node().addSolid(CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0))))
-		self.cFence2 = self.fence2.attachNewNode(CollisionNode('cFence2'))
-		self.cFence2.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
-		self.cFence3 = self.fence3.attachNewNode(CollisionNode('cFence3'))
-		self.cFence3.node().addSolid(CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0))))
-		#Uncomment this lines to see the collision spheres
-		#self.cStall.show()
-		#self.cHouse.show()
-		#self.cCarousel.show()
-		#self.cBoy.show()
-		#self.cOctopus.show()
-		#self.cCoaster.show()
-		#self.cPond.show()
-		#self.cPond1.show()
-		#self.cFence.show()
-		#self.cFence1.show()
-		#self.cFence2.show()
-		#self.cFence3.show()
-		#self.cRingtoss.show()
-		#self.cTent.show()
-		#self.cSkyride1.show()
-		#self.cSkyride2.show()
-		
-		self.cTrav=CollisionTraverser()
-		self.collisionHandler1 = CollisionHandlerQueue()
-		self.cTrav.addCollider(self.cBoy, self.collisionHandler1)
-		
-		self.taskMgr.add(self.boyMoveTask, "BoyMoveTask")
-		self.taskMgr.add(self.cameraLightCollisionTask, "cameraLightCollisionTask")
-		
-		#Write all the methods to be done when you press a key!
-		self.accept("arrow_left-repeat", self.keyLeft)
-		self.accept("arrow_right-repeat", self.keyRight)
-		self.accept("arrow_up-repeat",self.keyUp)
-		self.accept("arrow_down-repeat", self.keyDown)
-		self.accept("arrow_down-up", self.stopWalk)
-		self.accept("arrow_up-up",self.stopWalk)
-		self.accept("arrow_left-up",self.stopWalk)
-		self.accept("arrow_right-up",self.stopWalk)
-		self.accept("v",self.switchView)
-		self.accept("e",self.switchToJet)
-		self.accept("escape", sys.exit)
-		self.accept("l",self.changeLights)
-		self.accept("wheel_up",self.keys, ["wheel_up"])
-		self.accept("wheel_down", self.keys, ["wheel_down"])
-		
-		#Turn on ambient and directional Light for better graphics
-		ambientLight = AmbientLight("ambientLight")
-		ambientLight.setColor(Vec4(.3, .3, .3, 1))
-		directionalLight = DirectionalLight("directionalLight")
-		directionalLight.setDirection(Vec3(-5, -5, -5))
-		directionalLight.setColor(Vec4(1, 1, 1, 1))
-		directionalLight.setSpecularColor(Vec4(1, 1, 1, 1))
-		self.aLight = self.render.attachNewNode(ambientLight);
-		self.dLight = self.render.attachNewNode(directionalLight)
-		
-		self.hutLight = self.tent.attachNewNode(PointLight('tentLight'))
-		self.hutLight.setPos(0,0,120)
-		
-		self.animatethings()
-		
-	def animatethings(self):
-		
-		seq1 = self.hawk.posInterval(4, Point3(250, 250, 50))
-		seq3 = self.hawk.posInterval(4, Point3(-250, 250, 50))
-		seq2 = self.hawk.hprInterval(0.1, Point3(80, 0, 0), startHpr = Point3(50, 0, 0))
-		seq4 = self.hawk.hprInterval(0.1, Point3(70, 0, 0), startHpr = Point3(120, 0, 0))
-		seq5 = self.hawk.posInterval(2, Point3(-100, 250, 30))
-		seq6 = self.hawk.hprInterval(0.1, Point3(80, 0, 0), startHpr = Point3(50, 0, 0))
-		seq7 = self.hawk.posInterval(4, Point3(250, 20, 20))
-		seq8 = self.hawk.hprInterval(0.1, Point3(70, 0, 0), startHpr = Point3(120, 0, 0))
-		seq9 = self.hawk.posInterval(4, Point3(0, 0, 100))
-		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
-		seq.loop()
-		
-		seq1 = self.hawk1.posInterval(4, Point3(-100, 50, 50))
-		seq3 = self.hawk1.posInterval(4, Point3(-50, 250, 50))
-		seq2 = self.hawk1.hprInterval(0.1, Point3(30, 0, 0), startHpr = Point3(50, 0, 0))
-		seq4 = self.hawk1.hprInterval(0.1, Point3(90, 0, 0), startHpr = Point3(120, 0, 0))
-		seq5 = self.hawk1.posInterval(2, Point3(-200, 150, 50))
-		seq6 = self.hawk1.hprInterval(0.1, Point3(60, 0, 0), startHpr = Point3(50, 0, 0))
-		seq7 = self.hawk1.posInterval(4, Point3(200, 200, 50))
-		seq8 = self.hawk1.hprInterval(0.1, Point3(190, 0, 0), startHpr = Point3(120, 0, 0))
-		seq9 = self.hawk1.posInterval(4, Point3(200, 0, 100))
-		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
-		seq.loop()
-		
-		seq1 = self.flamingo.posInterval(6, Point3(30, 70, 0))
-		seq3 = self.flamingo.posInterval(2, Point3(70, 80, 0))
-		seq2 = self.flamingo.hprInterval(2, Point3(-90, 0, 0), startHpr = Point3(0, 0, 0))
-		seq4 = self.flamingo.hprInterval(0.1, Point3(-180, 0, 0), startHpr = Point3(-90, 0, 0))
-		seq5 = self.flamingo.posInterval(2, Point3( 60, 50, 0))
-		seq6 = self.flamingo.hprInterval(0.1, Point3(-270, 0, 0), startHpr = Point3(-180, 0, 0))
-		seq7 = self.flamingo.posInterval(4, Point3(15, 50, 0))
-		seq8 = self.flamingo.hprInterval(1, Point3( -180, 0, 0), startHpr = Point3(-270, 0, 0))
-		seq9 = self.flamingo.posInterval(4, Point3(15, -10,0))
-		seq10 = self.flamingo.hprInterval(1, Point3(-90, 0, 0), startHpr = Point3(-180, 0, 0))
-		seq11 = self.flamingo.posInterval(4, Point3(30, -10, 0))
-		seq12 = self.flamingo.hprInterval(1, Point3(0, 0, 0), startHpr = Point3(-90, 0, 0))
-		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9, seq10, seq11, seq12)
-		seq.loop()
-		
-		seq1 = self.blueBird.posInterval(8, Point3(-250, 200, 50))
-		seq3 = self.blueBird.posInterval(8, Point3(-250, -200, 50))
-		seq2 = self.blueBird.hprInterval(1, Point3(50, 0, 0), startHpr = Point3(0, 0, 0))
-		seq4 = self.blueBird.hprInterval(1, Point3(30, 0, 0), startHpr = Point3(50, 0, 0))
-		seq5 = self.blueBird.posInterval(5, Point3(-200, 150, 50))
-		seq6 = self.blueBird.hprInterval(1, Point3(60, 0, 0), startHpr = Point3(50, 0, 0))
-		seq7 = self.blueBird.posInterval(4, Point3(200, 200, 50))
-		seq8 = self.blueBird.hprInterval(1, Point3(190, 0, 0), startHpr = Point3(120, 0, 0))
-		seq9 = self.blueBird.posInterval(5, Point3(200, 0, 100))
-		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
-		seq.loop()
-		
-		seq1 = self.Dropship.posInterval(3, Point3(-50, -120, 40))
-		seq2 = self.Dropship.posInterval(4, Point3(-50, 70, 40))
-		seq3 = self.Dropship.posInterval(3, Point3(-50, 130, 13))
-		seq4 = self.Dropship.hprInterval(1, Point3( 180, 0, 0), startHpr = Point3(0, 0, 0))
-		seq5 = self.Dropship.posInterval(3, Point3(-50, 70, 40))
-		seq6 = self.Dropship.posInterval(4, Point3(-50, -120, 40))
-		seq7 = self.Dropship.posInterval(3, Point3(-50, -160, 13))
-		seq8 = self.Dropship.hprInterval(1, Point3( 180, 0, 0), startHpr = Point3(0, 0, 0))
-		self.skyRideSeq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8)
-		self.skyRideSeq.loop()
-	
-	def changeLights(self):
-		if self.lights == False:
-			self.render.setLight(self.aLight)
-			self.render.setLight(self.dLight)
-			self.lights = True
-		else:
-			self.render.clearLight(self.aLight)
-			self.render.clearLight(self.dLight)
-			self.lights = False
-		
-	def climbOnJet(self):
-		x = self.boy.getX(); y = self.boy.getY(); 
-		x1 = self.jets.getX(); y1 = self.jets.getY(); 
-		if self.hasJet:
-			seq1 = self.boy.posInterval(1, Point3( x, y, 10))
-			seq2 = self.jets.posInterval(1, Point3( 0, 0, 0))
-			seq = Parallel(seq1, seq2)
-			seq.start()
-		else:
-			seq1 = self.boy.posInterval(0.05, Point3( x, y, 15))
-			par1 = self.boy.posInterval(0.5, Point3( x, y, 0))
-			par2 = self.jets.posInterval(0.5, Point3( 0, -800, 350))
-			seq = Sequence(seq1)
-			seq.start()
-			par = Parallel(par1, par2)
-			par.start()
-		return
-	      
-	def switchToJet(self):
-		if self.hasJet:
-		      self.hasJet = False
-		      self.climbOnJet()
-		else:
-		      self.jets.setScale(0.4)
-		      self.hasJet = True
-		      self.boy.play("walk")
-		      self.climbOnJet()
-		return
-	      
-	def switchView(self):
-		if self.worldView:
-			taskMgr.remove("SpinCameraTask")
-			self.worldView = False
-		else:
-			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
-			self.worldView = True
-
-	def spinCameraTask(self, task):
-		angleDegrees = task.time * 6.0
-		angleRadians = angleDegrees * (pi / 180.0)
-		self.camera.setPos(320 * sin(angleRadians), -320.0 * cos(angleRadians), 30)
-		self.camera.setHpr(angleDegrees, 0, 0)
-		return Task.cont
-	      
-	def keys(self,action):
-	  #If camera goes away then Y should change faster while if it comes near then Z should change faster
-		if action == "wheel_down":
-			self.y = self.y - 2.5
-			self.z = self.z - 5
-			if self.y < 30:
-				self.y = 30
-			if self.z < 13:
-				self.z = 13
-		elif action == "wheel_up":
-			self.y = self.y + 5
-			self.z = self.z + 2
-			if self.y > 160:
-				self.y = 160
-			if self.z > 50:
-				self.z = 50
-	      
-	def cameraLightCollisionTask(self,task):
-		base.camera.setPos(self.boy.getX(),self.boy.getY() - self.y, self.z)
-		
-		if base.mouseWatcherNode.hasMouse():
-			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
-			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
-		#if self.song.status() == AudioSound.BAD:
-		#	print "BAD"
-		#elif self.song.status() == AudioSound.READY:
-		#	print "READY"
-		#else:
-		#	print "PLAYING"
-		
-		if self.nearCarousel:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.carousel.setHpr(angleDegrees, 0, 0)
-		if self.nearOctopus:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.octopus.setHpr(angleDegrees, 0, 0)
-		if self.nearTent:
-			self.tent.setLight(self.hutLight)
-		else:
-			self.tent.clearLight(self.hutLight)
-			
-		if self.nearSkyride:
-			self.skyRideSeq.pause()
-		else:
-			if not self.skyRideSeq.isPlaying():
-				self.skyRideSeq.resume()
-				
-		if self.nearHouse:
-			if not self.song.status() == AudioSound.PLAYING:
-				self.song.play()
-				#self.song.setLoop(0)
-			self.sfxManagerList[0].update()
-		else:
-			if self.song.status() == self.song.PLAYING:
-				self.song.stop()
-			#self.song.setLoop(1)
-			#	self.song.setLoop(False)
-			
-		self.cTrav.traverse(render)
-		self.collisionHandler1.sortEntries()
-		if self.collisionHandler1.getNumEntries() == 0:
-			self.startPos = self.boy.getPos()
-			self.nearCarousel = False
-			self.nearOctopus = False
-			self.nearSkyride = False
-			self.nearTent = False
-			self.nearHouse = False
-			#self.pose = False
-		else:
-			nearBridge = False
-			for i in range(self.collisionHandler1.getNumEntries()):
-				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
-				#print entry
-				if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearCarousel = True
-				elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearOctopus = True
-				elif "cTentNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearTent = True
-				elif "cSkyrideNode1" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName() or "cSkyrideNode2" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearSkyride = True
-				elif "cHouseNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearHouse = True
-					
-				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2]-2.5)
-					nearBridge = True
-					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
-			if not (self.nearCarousel or self.nearHouse or self.nearOctopus or self.nearSkyride or self.nearTent or nearBridge):
-			#if (self.nearCarousel and self.pose):
-				self.boy.setPos(self.startPos)
-			if not nearBridge:
-				self.boy.setZ(0)
-		return Task.cont
-
-#These are the methods to move Ralph from his position as per the arrow keys
-	def boyMoveTask(self, task):
-		if self.isMoving and not self.hasJet:
-			if not self.myAnimControl.isPlaying():
-				self.boy.loop("run")
-				#print "fuck u"
-				#return
-		if not self.isMoving:
-			if self.rotateBack:
-				self.boy.setH(self.boy.getH() + 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateBack = False
-			elif self.rotateRight:
-				self.boy.setH(self.boy.getH() + 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateRight = False
-			elif self.rotateLeft:
-				self.boy.setH(self.boy.getH() - 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateLeft = False
-			else:
-				self.boy.pose("walk", 5)
-		return Task.again
-		
-	def keyUp(self):
-		self.boy.setY(self.boy.getY() + 2)
-		self.isMoving = True
-	
-	def keyDown(self):
-		if not self.rotateBack:
-			self.boy.setH(self.boy.getH() + 10)
-			#base.camera.setH(self.boy.getH()+10)
-			if self.boy.getH() % 180 == 0:
-				self.rotateBack = True
-		else:
-			self.boy.setY(self.boy.getY() - 2)
-			self.isMoving = True
-		
-	def stopWalk(self):
-		self.isMoving = False
-	
-	def keyLeft(self):
-		if not self.rotateLeft:
-			self.boy.setH(self.boy.getH() + 10)
-			if self.boy.getH() % 90 == 0:
-				self.rotateLeft = True
-		else:
-			self.boy.setX(self.boy.getX() - 2)
-			self.isMoving = True  
-		
-	def keyRight(self):
-		if not self.rotateRight:
-			self.boy.setH(self.boy.getH() - 10)
-			if self.boy.getH() % 90 == 0:
-				self.rotateRight = True
-		else:
-			self.boy.setX(self.boy.getX() + 2)
-			self.isMoving = True 
-
 app = MyApp()
 app.run()
