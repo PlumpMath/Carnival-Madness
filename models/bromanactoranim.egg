@@ -1,0 +1,216 @@
+<CoordinateSystem> { Z-Up }
+
+<Comment> {
+  "MaxEggPlugin nul.max -o 'E:\szayat\world2\animations\broman\bromanActorZeroedAnim.egg' -a chan"
+}
+<Table> {
+  <Bundle> bromanHeadBob {
+    <Table> "<skeleton>" {
+      <Table> bromanRoot {
+        <Xfm$Anim_S$> xform {
+          <Scalar> fps { 30 }
+          <Char*> order { sphrt }
+          <S$Anim> i { <V> { 0.00611351 } }
+          <S$Anim> j { <V> { 0.00611351 } }
+          <S$Anim> k { <V> { 0.00611352 } }
+          <S$Anim> h { <V> { 165.729 } }
+          <S$Anim> p { <V> { 84.3852 } }
+          <S$Anim> r { <V> { -79.8752 } }
+          <S$Anim> x { <V> { -0.00221454 } }
+          <S$Anim> y { <V> { -0.0996718 } }
+          <S$Anim> z { <V> { -0.296847 } }
+        }
+        <Table> bromanWaist {
+          <Xfm$Anim_S$> xform {
+            <Scalar> fps { 30 }
+            <Char*> order { sphrt }
+            <S$Anim> h { <V> { 10.608 } }
+            <S$Anim> p { <V> { 1.49926 } }
+            <S$Anim> r { <V> { -6.75619 } }
+            <S$Anim> x { <V> { 59.3305 } }
+          }
+          <Table> bromanChest {
+            <Xfm$Anim_S$> xform {
+              <Scalar> fps { 30 }
+              <Char*> order { sphrt }
+              <S$Anim> h { <V> { -1.24042 } }
+              <S$Anim> p { <V> { -0.144286 } }
+              <S$Anim> r { <V> { 13.4973 } }
+              <S$Anim> x { <V> { 73.3901 } }
+            }
+            <Table> bromanNeck {
+              <Xfm$Anim_S$> xform {
+                <Scalar> fps { 30 }
+                <Char*> order { sphrt }
+                <S$Anim> h {
+                  <V> {
+                    -0.20211 -0.0550208 0.319549 0.810571 1.28108
+                    1.58678 1.75379 1.89934 2.02426 2.12953 2.21614
+                    2.28509 2.33732 2.3737 2.39503 2.40199 2.31153
+                    2.06543 1.7021 1.26737 0.815405 0.402265 0.0775233
+                    -0.119482
+                  }
+                }
+                <S$Anim> p {
+                  <V> {
+                    -0.230535 -0.153609 -0.00256352 0.109443 0.135489
+                    0.116785 0.103779 0.0910669 0.0801783 0.0720455
+                    0.067058 0.0651142 0.0656754 0.0678156 0.0702702
+                    0.0714792 0.105562 0.180266 0.24582 0.259005
+                    0.199554 0.0779355 -0.066771 -0.178057
+                  }
+                }
+                <S$Anim> r {
+                  <V> {
+                    22.4794 20.7442 16.4908 11.1467 6.13809 2.89184
+                    1.11692 -0.435545 -1.77393 -2.90661 -3.84196
+                    -4.58838 -5.15426 -5.54802 -5.77808 -5.8529 -4.83186
+                    -2.10836 1.8081 6.40878 11.1861 15.6332 19.243
+                    21.5078
+                  }
+                }
+                <S$Anim> x { <V> { 26.5306 } }
+              }
+              <Table> bromanHead {
+                <Xfm$Anim_S$> xform {
+                  <Scalar> fps { 30 }
+                  <Char*> order { sphrt }
+                  <S$Anim> h {
+                    <V> {
+                      -0.87928 -0.997659 -1.27913 -1.61087 -1.88253
+                      -1.99415 -1.86257 -1.49838 -0.949826 -0.281566
+                      0.422857 1.07518 1.6048 1.97598 2.18868 2.25834
+                      2.25372 2.22944 2.16673 2.03664 1.68694 1.02976
+                      0.197781 -0.581941
+                    }
+                  }
+                  <S$Anim> p {
+                    <V> {
+                      -1.3841 -1.40093 -1.46223 -1.57427 -1.70045
+                      -1.76204 -1.65618 -1.39906 -1.10159 -0.871484
+                      -0.782355 -0.854897 -1.0548 -1.30689 -1.51867
+                      -1.60433 -1.59695 -1.55001 -1.42875 -1.20699
+                      -0.949651 -0.831511 -0.944511 -1.22191
+                    }
+                  }
+                  <S$Anim> r {
+                    <V> {
+                      -5.38046 -4.1039 -1.05949 2.57503 5.62111 6.89881
+                      5.62545 2.17027 -2.91944 -9.09811 -15.8226
+                      -22.5505 -28.7376 -33.8367 -37.2986 -38.5744
+                      -38.4978 -37.9798 -36.5883 -33.8916 -28.8737
+                      -21.8298 -14.2901 -7.77688
+                    }
+                  }
+                  <S$Anim> x { <V> { 35.483 } }
+                }
+                <Table> bromanScalp {
+                  <Xfm$Anim_S$> xform {
+                    <Scalar> fps { 30 }
+                    <Char*> order { sphrt }
+                    <S$Anim> h { <V> { -0.072935 } }
+                    <S$Anim> p { <V> { 0.0152686 } }
+                    <S$Anim> r { <V> { -1.01343 } }
+                    <S$Anim> x { <V> { 185.64 } }
+                  }
+                }
+              }
+            }
+          }
+          <Table> connectBone02 {
+            <Xfm$Anim_S$> xform {
+              <Scalar> fps { 30 }
+              <Char*> order { sphrt }
+              <S$Anim> h { <V> { 96.8681 } }
+              <S$Anim> p { <V> { -4.45189 } }
+              <S$Anim> r { <V> { 0.800862 } }
+              <S$Anim> x { <V> { 73.3901 } }
+            }
+            <Table> bromanRightShoulder {
+              <Xfm$Anim_S$> xform {
+                <Scalar> fps { 30 }
+                <Char*> order { sphrt }
+                <S$Anim> k { <V> { -1 } }
+                <S$Anim> h { <V> { 158.297 } }
+                <S$Anim> p { <V> { 77.8405 } }
+                <S$Anim> r { <V> { 172.822 } }
+                <S$Anim> x { <V> { 58.5955 } }
+              }
+              <Table> bromanRightElbow {
+                <Xfm$Anim_S$> xform {
+                  <Scalar> fps { 30 }
+                  <Char*> order { sphrt }
+                  <S$Anim> h { <V> { -67.3312 } }
+                  <S$Anim> x { <V> { 75.3409 } }
+                }
+                <Table> bromanRightWrist {
+                  <Xfm$Anim_S$> xform {
+                    <Scalar> fps { 30 }
+                    <Char*> order { sphrt }
+                    <S$Anim> h { <V> { 23.5736 } }
+                    <S$Anim> p { <V> { -31.4693 } }
+                    <S$Anim> r { <V> { -56.8392 } }
+                    <S$Anim> x { <V> { 55.4705 } }
+                  }
+                  <Table> bromanRightFingers {
+                    <Xfm$Anim_S$> xform {
+                      <Scalar> fps { 30 }
+                      <Char*> order { sphrt }
+                      <S$Anim> h { <V> { -0.196475 } }
+                      <S$Anim> x { <V> { 65.0561 } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          <Table> connectBone03 {
+            <Xfm$Anim_S$> xform {
+              <Scalar> fps { 30 }
+              <Char*> order { sphrt }
+              <S$Anim> h { <V> { -99.4084 } }
+              <S$Anim> p { <V> { 8.65516 } }
+              <S$Anim> r { <V> { -3.50365 } }
+              <S$Anim> x { <V> { 73.3901 } }
+            }
+            <Table> bromanLeftShoulder {
+              <Xfm$Anim_S$> xform {
+                <Scalar> fps { 30 }
+                <Char*> order { sphrt }
+                <S$Anim> h { <V> { -11.5206 } }
+                <S$Anim> p { <V> { -81.1946 } }
+                <S$Anim> r { <V> { 53.3888 } }
+                <S$Anim> x { <V> { 60.568 } }
+              }
+              <Table> bromanLeftElbow {
+                <Xfm$Anim_S$> xform {
+                  <Scalar> fps { 30 }
+                  <Char*> order { sphrt }
+                  <S$Anim> h { <V> { -85.5326 } }
+                  <S$Anim> x { <V> { 74.0065 } }
+                }
+                <Table> bromanLeftWrist {
+                  <Xfm$Anim_S$> xform {
+                    <Scalar> fps { 30 }
+                    <Char*> order { sphrt }
+                    <S$Anim> h { <V> { 35.7457 } }
+                    <S$Anim> p { <V> { 17.5098 } }
+                    <S$Anim> r { <V> { 28.371 } }
+                    <S$Anim> x { <V> { 59.225 } }
+                  }
+                  <Table> bromanLeftFinger {
+                    <Xfm$Anim_S$> xform {
+                      <Scalar> fps { 30 }
+                      <Char*> order { sphrt }
+                      <S$Anim> x { <V> { 62.3787 } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
