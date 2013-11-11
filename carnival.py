@@ -19,7 +19,14 @@ from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionS
 START_BUT_TEXT = "PLAY"
 EXIT_BUT_TEXT = "EXIT"
 OPTION_BUT_TEXT = "PREFERENCES"
-CREDITS_BUT_TEXT = "ABOUT US"
+CREDITS_BUT_TEXT = "HIGH SCORES"
+FULLSCREEN_BUT_TEXT = "Full Screen"
+FULLSCREEN_LABEL = "Enable or Disable Full Screen"
+SOUND_LABEL = "Enable or Disable Audio"
+AUDIO_BUT_TEXT = "Sound"
+RESOLUTION_LABEL = "Screen Resolution Size"
+LIGHT_BUT_TEXT = "Lights"
+LIGHTS_LABEL = "Toggle Lights"
  
 class MyApp(ShowBase):
 	def __init__(self):
@@ -49,6 +56,9 @@ class MyApp(ShowBase):
 		self.lights = False
 		self.pose = False
 		self.nearBridge = False
+		self.enableAudio = True
+		self.screenResolutionVal = 4
+		self.isFullScreen = False
 		
 		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
 		base.disableMouse()
@@ -318,7 +328,8 @@ class MyApp(ShowBase):
 				
 		if self.nearHouse:
 			if not self.song.status() == AudioSound.PLAYING:
-				self.song.play()
+				if self.enableAudio:
+					self.song.play()
 			self.sfxManagerList[0].update()
 		else:
 			if self.song.status() == self.song.PLAYING:
@@ -362,7 +373,89 @@ class MyApp(ShowBase):
 			#if (self.nearCarousel and self.pose):
 				self.boy.setPos(self.startPos)
 		return Task.cont
-
+	
+	def hideMainMenu(self):
+		self.startBut.hide()
+		self.optiontBut.hide()
+		self.exitBut.hide()
+		self.aboutBut.hide()
+	
+	def showMainMenu(self):
+		self.startBut.show()
+		self.optiontBut.show()
+		self.exitBut.show()
+		self.aboutBut.show()
+	
+	def showPrefs(self):
+		self.hideMainMenu()
+		#self.labelResolution.show()
+		self.labelFullScreen.show()
+		self.labelSound.show()
+		#self.resolutionSlider.show()
+		self.fullScreenBut.show()
+		self.backBut.show()
+		self.audioBut.show()
+		self.labelLights.show()
+		self.lightsBut.show()
+	
+	def hidePrefs(self):
+		#if self.isFullScreen:
+			#props = WindowProperties()
+			#if self.screenResolutionVal == 1:
+				#props.setSize(1600, 900)
+			#elif self.screenResolutionVal == 2:
+				#props.setSize(1366, 768)
+			#elif self.screenResolutionVal == 3:
+				#props.setSize(1024, 768)
+			#elif self.screenResolutionVal == 4:
+				#props.setSize(800, 600)
+			#props.setFullscreen(True)
+			#base.win.requestProperties(props)
+		#self.labelResolution.hide()
+		self.labelFullScreen.hide()
+		self.labelSound.hide()
+		#self.resolutionSlider.hide()
+		self.fullScreenBut.hide()
+		self.audioBut.hide()
+		self.backBut.hide()
+		self.showMainMenu()
+		self.labelLights.hide()
+		self.lightsBut.hide()
+	
+	def toggleLights(self,status):
+		self.changeLights()
+		
+	def setResolution(self):
+		if self.resolutionSlider['value']/25 == 4:
+			self.screenResolutionVal = 4
+			self.labelLights1['text'] = "Screen Resolution :- 1600 * 900"
+		elif self.resolutionSlider['value']/25 == 3:
+			self.screenResolutionVal = 3
+			self.labelLights1['text'] = "Screen Resolution :- 1366 * 768"
+		elif self.resolutionSlider['value']/25 == 2:
+			self.screenResolutionVal = 2
+			self.labelLights1['text'] = "Screen Resolution :- 1024 * 768"
+		elif self.resolutionSlider['value']/25 == 1:
+			self.screenResolutionVal = 1
+			self.labelLights1['text'] = "Screen Resolution :- 800 * 600"
+	
+	def toggleScreen(self,status):
+		props = WindowProperties()
+		if not status:
+			self.isFullScreen = False
+			props.setFullscreen(False)
+		else:
+			self.isFullScreen = True
+			props.setSize(1366, 768)
+			props.setFullscreen(True)
+		base.win.requestProperties(props)
+		
+	def toggleAudio(self,status):
+		if not status:
+			self.enableAudio = False
+		else:
+			self.enableAudio = True
+	
 #These are the methods to move Ralph from his position as per the arrow keys
 	def boyMoveTask(self, task):
 		if self.isMoving and not self.hasJet:
@@ -801,8 +894,24 @@ class MyApp(ShowBase):
 		maps = loader.loadModel('models/button_maps')
 		self.startBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = START_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchView)
 		self.exitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = EXIT_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.quit)
-		self.optiontBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
+		self.optiontBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.showPrefs)
 		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
+		
+		#Set up the preferences GUI menu and then hide it
+		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.6))
+		self.fullScreenBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = FULLSCREEN_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.6), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleScreen)
+		
+		self.labelSound = DirectLabel(text = SOUND_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.4))
+		self.audioBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = AUDIO_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleAudio)
+		
+		#self.resolutionSlider = DirectSlider(range = (0,100), value = 100, pageSize = 25, pos = (0.7, 0, 0), scale = 0.5, command = self.setResolution)
+		#self.labelResolution = DirectLabel(text = RESOLUTION_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
+		
+		self.lightsBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = LIGHT_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.2), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.toggleLights, indicatorValue = 1)
+		self.labelLights = DirectLabel(text = LIGHTS_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.2))
+		
+		self.backBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = "<--- Back ", text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.hidePrefs)
+		self.hidePrefs()
 		
 app = MyApp()
 app.run()
