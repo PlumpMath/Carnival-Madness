@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'E:\sshadhan\Desktop\Anim\01FavoriteApprentice.egg' -a both"
 }
 <Texture> Tex4397 {
-  "maps\invis.png"
+  "maps/invis.png"
   <Scalar> format { rgba }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
@@ -12,7 +12,7 @@
   <Scalar> magfilter { linear }
 }
 <Texture> Tex1 {
-  "maps\wizard.png"
+  "maps/wizard.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }

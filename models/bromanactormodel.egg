@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'E:\szayat\world2\animations\broman\bromanActorZeroedModel.egg' -a model"
 }
 <Texture> Tex931 {
-  "maps\broshades.png"
+  "maps/broshades.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
@@ -12,7 +12,7 @@
   <Scalar> magfilter { linear }
 }
 <Texture> Tex1 {
-  "maps\broman.png"
+  "maps/broman.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }

@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'E:\szayat\world2\animations\broman\bromanCar.egg'"
 }
 <Texture> Tex229 {
-  "maps\bromantire.png"
+  "maps/bromantire.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
@@ -12,7 +12,7 @@
   <Scalar> magfilter { linear }
 }
 <Texture> Tex201 {
-  "maps\bromanspeaker.png"
+  "maps/bromanspeaker.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
@@ -20,7 +20,7 @@
   <Scalar> magfilter { linear }
 }
 <Texture> Tex1 {
-  "maps\bromancar.png"
+  "maps/bromancar.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }

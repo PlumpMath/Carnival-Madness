@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'E:\bschrank\Desktop\BoyModel.egg' -a model"
 }
 <Texture> Tex1 {
-  "maps\boy-texture.png"
+  "maps/boy-texture.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }

@@ -1,6 +1,6 @@
 <CoordinateSystem> { y-up-left }
 
-<Texture> TextureMap { "maps\lollipop.png"
+<Texture> TextureMap { "maps/lollipop.png"
 	<Scalar> format { rgb }
 	<Scalar> wrap { repeat }
 }

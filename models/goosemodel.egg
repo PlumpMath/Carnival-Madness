@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'C:\Documents and Settings\Administrator\Desktop\GooseModelOnly.egg' -a model"
 }
 <Texture> Tex1 {
-  "maps\goose.png"
+  "maps/goose.png"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }

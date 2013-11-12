@@ -4,7 +4,7 @@
   "MaxEggPlugin nul.max -o 'E:\jhuh\Desktop\SkySphere.egg' -a model"
 }
 <Texture> Tex1 {
-  "maps\nature.jpg"
+  "maps/nature.jpg"
   <Scalar> format { rgb }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
