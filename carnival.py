@@ -15,6 +15,11 @@ from panda3d.core import TransparencyAttrib
 import sys
 from direct.gui.DirectGui import *
 from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionSphere, CollisionTraverser
+#import direct.directbase.DirectStart 
+from direct.showbase.RandomNumGen import * 
+from direct.showbase.DirectObject import DirectObject
+from direct.actor.Actor import Actor
+from panda3d.ai import *
  
 START_BUT_TEXT = "PLAY"
 EXIT_BUT_TEXT = "EXIT"
@@ -46,6 +51,7 @@ class MyApp(ShowBase):
 		#To show the FPS
 		loadPrcFileData('','show-frame-rate-meter 1')
 		
+		self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
 		self.worldView = False
 		self.hasJet = False
 		self.nearCarousel = False
@@ -59,7 +65,13 @@ class MyApp(ShowBase):
 		self.enableAudio = True
 		self.screenResolutionVal = 4
 		self.isFullScreen = False
+		self.hasStarted = False
+		self.hasResumed = False
 		
+		#These instance field counts distance b/w actor and monster while next one is health
+		self.countMonster = 300
+		self.boyHealth = 300
+				
 		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
 		base.disableMouse()
 		
@@ -71,6 +83,17 @@ class MyApp(ShowBase):
 		
 		#Load all the Models and Actors
 		self.loadAllModels()
+		
+		######------>
+		self.AIworld = AIWorld(self.render)
+		self.AIchar = AICharacter("boy",self.monster, 150, 5, 150)
+		self.AIworld.addAiChar(self.AIchar)
+		self.AIbehaviors = self.AIchar.getAiBehaviors()
+		#self.AIbehaviors.pathFollow(1.0)
+		self.AIbehaviors.pursue(self.boy,1.0) 
+		self.monster.loop("run")
+		#self.AIbehaviors.addToPath(self.boy.getPos())
+		#self.AIbehaviors.startFollow()
 		
 		#Set up the Collision Nodes 
 		self.setupCollisionNodes()
@@ -87,20 +110,24 @@ class MyApp(ShowBase):
 		self.taskMgr.add(self.cameraLightCollisionTask, "cameraLightCollisionTask")
 		
 		#Write all the methods to be done when you press a key!
-		self.accept("arrow_left-repeat", self.keyLeft)
-		self.accept("arrow_right-repeat", self.keyRight)
-		self.accept("arrow_up-repeat",self.keyUp)
-		self.accept("arrow_down-repeat", self.keyDown)
-		self.accept("arrow_down-up", self.stopWalk)
-		self.accept("arrow_up-up",self.stopWalk)
-		self.accept("arrow_left-up",self.stopWalk)
-		self.accept("arrow_right-up",self.stopWalk)
+		self.accept("arrow_left-repeat", self.keys, ["left",1] )
+		self.accept("arrow_right-repeat", self.keys, ["right",1])
+		self.accept("arrow_up-repeat",self.keys, ["forward",1])
+		self.accept("arrow_down-repeat", self.keys, ["right",1])
+		self.accept("arrow_down-up", self.keys, ["back", 0])
+		self.accept("arrow_up-up",self.keys, ["forward", 0])
+		self.accept("arrow_left-up",self.keys, ["left",0])
+		self.accept("arrow_right-up",self.keys, ["right", 0])
+		#self.accept("arrow_down-up", self.stopWalk)
+		#self.accept("arrow_up-up",self.stopWalk)
+		#self.accept("arrow_left-up",self.stopWalk)
+		#self.accept("arrow_right-up",self.stopWalk)
 		#self.accept("v",self.switchView)
 		self.accept("e",self.switchToJet)
 		self.accept("escape", self.switchView)
 		self.accept("l",self.changeLights)
-		self.accept("wheel_up",self.keys, ["wheel_up"])
-		self.accept("wheel_down", self.keys, ["wheel_down"])
+		self.accept("wheel_up",self.keys, ["wheel_up",1])
+		self.accept("wheel_down", self.keys, ["wheel_down",1])
 		
 		#Turn on ambient and directional Light for better graphics
 		self.ambientLight = AmbientLight("ambientLight")
@@ -249,6 +276,8 @@ class MyApp(ShowBase):
 		if self.worldView:
 			taskMgr.remove("SpinCameraTask")
 			self.worldView = False
+			self.hasStarted = True
+			self.hasResumed = True
 			props = WindowProperties()
 			props.setCursorHidden(True) 
 			base.win.requestProperties(props)
@@ -260,6 +289,8 @@ class MyApp(ShowBase):
 		else:
 			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
 			self.worldView = True
+			self.hasStarted = False
+			self.hasResumed = False
 			props = WindowProperties()
 			props.setCursorHidden(False) 
 			base.win.requestProperties(props)
@@ -271,14 +302,19 @@ class MyApp(ShowBase):
 			#Transitions(loader).fadeScreenColor(LVecBase4f(0.1,0.1,0.1,1))
 
 	def spinCameraTask(self, task):
+		#rn= RandomNumGen(500) 
+		#print rn.randint(0,400) 
+		#del rn
+		
 		angleDegrees = task.time * 6.0
 		angleRadians = angleDegrees * (pi / 180.0)
 		self.camera.setPos(320 * sin(angleRadians), -320.0 * cos(angleRadians), 30)
 		self.camera.setHpr(angleDegrees, 0, 0)
 		return Task.cont
 	      
-	def keys(self,action):
-	  #If camera goes away then Y should change faster while if it comes near then Z should change faster
+	def keys(self,action,args):
+		#print action,args
+	    #If camera goes away then Y should change faster while if it comes near then Z should change faster
 		if action == "wheel_down":
 			self.y = self.y - 2.5
 			self.z = self.z - 5
@@ -293,6 +329,12 @@ class MyApp(ShowBase):
 				self.y = 160
 			if self.z > 50:
 				self.z = 50
+		if action == "forward":
+			self.keyMap["forward"] = args
+		if action == "right":
+			self.keyMap["right"] = args
+		if action == "left":
+			self.keyMap["left"] = args
 	      
 	def cameraLightCollisionTask(self,task):
 		base.camera.setPos(self.boy.getX(),self.boy.getY() - self.y, self.z)
@@ -304,6 +346,7 @@ class MyApp(ShowBase):
 		if base.mouseWatcherNode.hasMouse() and not self.worldView:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
+			#self.camera.setX(base.camera, -20 * globalClock.getDt())
 		#if self.song.status() == AudioSound.BAD:
 		#	print "BAD"
 		#elif self.song.status() == AudioSound.READY:
@@ -383,12 +426,16 @@ class MyApp(ShowBase):
 		self.optiontBut.hide()
 		self.exitBut.hide()
 		self.aboutBut.hide()
+		self.hasStarted = True
+		self.hasResumed = True
 	
 	def showMainMenu(self):
 		self.startBut.show()
 		self.optiontBut.show()
 		self.exitBut.show()
 		self.aboutBut.show()
+		self.hasResumed = False
+		self.hasStarted = False
 	
 	def showPrefs(self):
 		self.hideMainMenu()
@@ -459,32 +506,89 @@ class MyApp(ShowBase):
 			self.enableAudio = False
 		else:
 			self.enableAudio = True
-	
+
+###This method is used to change the health of actor which gets tired by running.
+	def health(self):
+		if self.isMoving:
+			# self.countMonster=self.countMonster+1
+			self.boyHealth=self.boyHealth-0.5
+			print "self.countMonster = "+str(self.countMonster)
+			print "self.countMonster = "+str(self.countMonster)
+			
+		else:
+			self.countMonster=self.countMonster-0.5
+			if self.health < 300:
+				self.boyHealth=self.boyHealth+0.5
+			print "self.countMonster = "+str(self.countMonster)
+			print "self.boyHealth = "+str(self.boyHealth)
+			
+		if (self.countMonster == 0):
+			seq1 = self.monster.posInterval(2, Point3(0, 2, 5))
+			seq1.start()
+			self.monster.loop("run")
+			textObject = OnscreenText(text = 'Game Over Monster Killed You!!!', pos = (0, 0.50), scale = 0.1)
+			#self.switchView()
+			
+		if (self.health == 0):
+			textObject = OnscreenText(text = 'Game Over', pos = (-1, 0.50), scale = 0.06)
+			#self.switchView()		
+			
+		# if (self.countMonster > 100):
+			# seq1 = self.monster.posInterval(2, Point3(0, 20, 5))
+			# seq1.start() 		
+			
 #These are the methods to move Ralph from his position as per the arrow keys
 	def boyMoveTask(self, task):
-		if self.isMoving and not self.hasJet:
-			if not self.myAnimControl.isPlaying():
-				self.boy.loop("run")
-		if not self.isMoving:
-			if self.rotateBack:
-				self.boy.setH(self.boy.getH() + 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateBack = False
-			elif self.rotateRight:
-				self.boy.setH(self.boy.getH() + 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateRight = False
-			elif self.rotateLeft:
-				self.boy.setH(self.boy.getH() - 10)
-				if self.boy.getH() % 180 == 0:
-					self.rotateLeft = False
+		if self.hasStarted and self.hasResumed:
+			if self.keyMap["forward"] != 0:
+				self.boy.setY(self.boy, -35 * globalClock.getDt())
+				self.isMoving = True
+			if self.keyMap["left"] != 0:
+				self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
+				self.isMoving = True
+			if self.keyMap["right"] != 0:
+				self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
+				self.isMoving = True
+			if not (self.keyMap["forward"] or self.keyMap["left"] or self.keyMap["right"]):
+				self.isMoving = False
+			if self.isMoving:
+				if not self.myAnimControl.isPlaying():
+					self.boy.loop("run")
 			else:
 				self.boy.pose("walk", 5)
+			
+			#self.AIbehaviors.pursue(self.boy, 1.0)
+			self.AIworld.update()
+			self.monster.setZ(15)
+			#if self.isMoving and not self.hasJet:
+			#	if not self.myAnimControl.isPlaying():
+			#		self.boy.loop("run")
+				#self.AIbehaviors.addToPath(self.boy.getPos())
+				#self.AIbehaviors.startFollow()
+		#	if not self.isMoving:
+		#		if self.rotateBack:
+		#			self.boy.setH(self.boy.getH() + 10)
+		#			if self.boy.getH() % 180 == 0:
+		#				self.rotateBack = False
+		#		elif self.rotateRight:
+		#			self.boy.setH(self.boy.getH() + 10)
+		#			if self.boy.getH() % 180 == 0:
+		#				self.rotateRight = False
+		#		elif self.rotateLeft:
+		#			self.boy.setH(self.boy.getH() - 10)
+		#			if self.boy.getH() % 180 == 0:
+		#				self.rotateLeft = False
+				#else:
+				#	self.boy.pose("walk", 5)
+			#self.health()
 		return Task.again
 		
 	def keyUp(self):
-		self.boy.setY(self.boy.getY() + 2)
+		self.boy.setY(self.boy, -35 * globalClock.getDt())
+		#self.boy.setY(self.boy.getY() + 2)
 		self.isMoving = True
+		#####------>
+		#self.health()
 	
 	def keyDown(self):
 		if not self.rotateBack:
@@ -495,27 +599,37 @@ class MyApp(ShowBase):
 		else:
 			self.boy.setY(self.boy.getY() - 2)
 			self.isMoving = True
+			#####------>
+			#self.health()
 		
 	def stopWalk(self):
 		self.isMoving = False
+		#####------>
+		#self.health()
 	
 	def keyLeft(self):
-		if not self.rotateLeft:
-			self.boy.setH(self.boy.getH() + 10)
-			if self.boy.getH() % 90 == 0:
-				self.rotateLeft = True
-		else:
-			self.boy.setX(self.boy.getX() - 2)
-			self.isMoving = True  
+		self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
+		#if not self.rotateLeft:
+		#	self.boy.setH(self.boy.getH() + 10)
+		#	if self.boy.getH() % 90 == 0:
+		#		self.rotateLeft = True
+		#else:
+		#	self.boy.setX(self.boy.getX() - 2)
+		#	self.isMoving = True
+			#####------>
+		#	#self.health()
 		
 	def keyRight(self):
-		if not self.rotateRight:
-			self.boy.setH(self.boy.getH() - 10)
-			if self.boy.getH() % 90 == 0:
-				self.rotateRight = True
-		else:
-			self.boy.setX(self.boy.getX() + 2)
-			self.isMoving = True 
+		self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
+		#if not self.rotateRight:
+		#	self.boy.setH(self.boy.getH() - 10)
+		#	if self.boy.getH() % 90 == 0:
+		#		self.rotateRight = True
+		#else:
+		#	self.boy.setX(self.boy.getX() + 2)
+		#	self.isMoving = True
+		#	#####------>
+		#	#self.health()
 			
 	def setupCollisionNodes(self):
 		#Collision Nodes are created here and attached to spheres
@@ -578,7 +692,7 @@ class MyApp(ShowBase):
 		self.cTrav=CollisionTraverser()
 		self.collisionHandler1 = CollisionHandlerQueue()
 		self.cTrav.addCollider(self.cBoy, self.collisionHandler1)
-	
+		
 	def quit(self):
 		taskMgr.doMethodLater(2.6 ,sys.exit,'Exiting')
 		self.transit.irisOut(2.5)
@@ -961,11 +1075,122 @@ class MyApp(ShowBase):
 		seq6 = self.goose.hprInterval(0, Point3(0, 0, 0), startHpr = Point3(130, 0, 0))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6)
 		seq.loop()
+		#self.lollopop[50] 
 		self.lollipop = self.loader.loadModel("models/lollipop")
 		self.lollipop.reparentTo(self.render)
-		self.lollipop.setScale(5)
-		self.lollipop.setPos(100, 100, 0)
-		
+		self.lollipop.setScale(15)
+		self.lollipop.setPos(150, 150, 0)
+		self.lollipop1 = self.loader.loadModel("models/lollipop")
+		self.lollipop1.reparentTo(self.render)
+		self.lollipop1.setScale(15)
+		self.lollipop1.setPos(150, 320, 0)
+		self.lollipop2 = self.loader.loadModel("models/lollipop")
+		self.lollipop2.reparentTo(self.render)
+		self.lollipop2.setScale(15)
+		self.lollipop2.setPos(345, 40, 0)
+		self.lollipop3 = self.loader.loadModel("models/lollipop")
+		self.lollipop3.reparentTo(self.render)
+		self.lollipop3.setScale(15)
+		self.lollipop3.setPos(-280, -45, 0)
+		self.lollipop4 = self.loader.loadModel("models/lollipop")
+		self.lollipop4.reparentTo(self.render)
+		self.lollipop4.setScale(15)
+		self.lollipop4.setPos(-310, -90, 0)
+		self.lollipop5 = self.loader.loadModel("models/lollipop")
+		self.lollipop5.reparentTo(self.render)
+		self.lollipop5.setScale(15)
+		self.lollipop5.setPos(-325, -290, 0)
+		self.lollipop6 = self.loader.loadModel("models/lollipop")
+		self.lollipop6.reparentTo(self.render)
+		self.lollipop6.setScale(15)
+		self.lollipop6.setPos(350, 300, 0)
+		self.lollipop7 = self.loader.loadModel("models/lollipop")
+		self.lollipop7.reparentTo(self.render)
+		self.lollipop7.setScale(15)
+		self.lollipop7.setPos(-350, 100, 0)
+		self.lollipop8 = self.loader.loadModel("models/lollipop")
+		self.lollipop8.reparentTo(self.render)
+		self.lollipop8.setScale(15)
+		self.lollipop8.setPos(-300, 310, 0)
+		self.lollipop9 = self.loader.loadModel("models/lollipop")
+		self.lollipop9.reparentTo(self.render)
+		self.lollipop9.setScale(15)
+		self.lollipop9.setPos(20, -130, 0)
+		self.lollipop10 = self.loader.loadModel("models/lollipop")
+		self.lollipop10.reparentTo(self.render)
+		self.lollipop10.setScale(15)
+		self.lollipop10.setPos(40, 20, 10)
+		self.lollipop11 = self.loader.loadModel("models/lollipop")
+		self.lollipop11.reparentTo(self.render)
+		self.lollipop11.setScale(15)
+		self.lollipop11.setPos(340, -300, 0)
+		self.lollipop12 = self.loader.loadModel("models/lollipop")
+		self.lollipop12.reparentTo(self.render)
+		self.lollipop12.setScale(15)
+		self.lollipop12.setPos(-180, 200, 0)
+		self.lollipop13 = self.loader.loadModel("models/lollipop")
+		self.lollipop13.reparentTo(self.render)
+		self.lollipop13.setScale(15)
+		self.lollipop13.setPos(180, 200, 0)
+		self.lollipop14 = self.loader.loadModel("models/lollipop")
+		self.lollipop14.reparentTo(self.render)
+		self.lollipop14.setScale(15)
+		self.lollipop14.setPos(-144, -150, 0)
+		self.mint = self.loader.loadModel("models/mint")
+		self.mint.reparentTo(self.render)
+		self.mint.setScale(35)
+		self.mint.setPos(-114, -150, 3)
+		self.mint.setHpr(90, 0, 90)
+		self.mint1 = self.loader.loadModel("models/mint")
+		self.mint1.reparentTo(self.render)
+		self.mint1.setScale(35)
+		self.mint1.setPos(160, -80, 3)
+		self.mint1.setHpr(-30, 0, 90)
+		self.mint2 = self.loader.loadModel("models/mint")
+		self.mint2.reparentTo(self.render)
+		self.mint2.setScale(35)
+		self.mint2.setPos(340, -220, 3)
+		self.mint2.setHpr(90, 0, 90)
+		self.mint3 = self.loader.loadModel("models/mint")
+		self.mint3.reparentTo(self.render)
+		self.mint3.setScale(35)
+		self.mint3.setPos(-40, -40, 3)
+		self.mint3.setHpr(90, 0, 90)
+		self.mint4 = self.loader.loadModel("models/mint")
+		self.mint4.reparentTo(self.render)
+		self.mint4.setScale(35)
+		self.mint4.setPos(-32, 45, 3)
+		self.mint4.setHpr(0, 0, 90)
+		self.mint5 = self.loader.loadModel("models/mint")
+		self.mint5.reparentTo(self.render)
+		self.mint5.setScale(25)
+		self.mint5.setPos(255, 230, 3)
+		self.mint5.setHpr(90, 0, 90)
+		self.mint6 = self.loader.loadModel("models/mint")
+		self.mint6.reparentTo(self.render)
+		self.mint6.setScale(35)
+		self.mint6.setPos(320, 270, 3)
+		self.mint6.setHpr(90, 0, 90)
+		self.mint7 = self.loader.loadModel("models/mint")
+		self.mint7.reparentTo(self.render)
+		self.mint7.setScale(35)
+		self.mint7.setPos(190, 30, 3)
+		self.mint7.setHpr(0, 0, 90)
+		self.mint8 = self.loader.loadModel("models/mint")
+		self.mint8.reparentTo(self.render)
+		self.mint8.setScale(35)
+		self.mint8.setPos(-60, -240, 3)
+		self.mint8.setHpr(90, 0, 90)
+		self.mint9 = self.loader.loadModel("models/mint")
+		self.mint9.reparentTo(self.render)
+		self.mint9.setScale(35)
+		self.mint9.setPos(-160, 20, 3)
+		self.mint9.setHpr(90, 0, 90)
+		self.mint10 = self.loader.loadModel("models/mint")
+		self.mint10.reparentTo(self.render)
+		self.mint10.setScale(35)
+		self.mint10.setPos(30, -300, 3)
+		self.mint10.setHpr(90, 0, 90)
 		self.boy = Actor("models/ralph",{"walk":"models/ralph-walk","run":"models/ralph-run"})
 		self.boy.reparentTo(self.render)
 		self.boy.setPos(5, -210, 0)
@@ -978,6 +1203,13 @@ class MyApp(ShowBase):
 		self.rotateRight = False
 		self.myAnimControl = self.boy.getAnimControl('run')
 		
+		#####------>
+		self.monster = Actor("models/monster1",{"run":"models/monster1-tentacle-attack"})
+		self.monster.reparentTo(self.render)
+		self.monster.setScale(3)
+		self.monster.setPos(0,-325, 5)
+		self.monster.setHpr(0, 180, 0)
+			
 		self.jets = self.loader.loadModel("models/GreenJumpJet")
 		self.jets.reparentTo(self.boy)
 		self.jets.setPos(0, 500, 10)
