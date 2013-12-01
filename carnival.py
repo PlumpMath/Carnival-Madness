@@ -67,6 +67,8 @@ class MyApp(ShowBase):
 		self.isFullScreen = False
 		self.hasStarted = False
 		self.hasResumed = False
+		self.boost = False
+		self.boostCount = 1000
 		
 		#These instance field counts distance b/w actor and monster while next one is health
 		self.countMonster = 300
@@ -131,13 +133,19 @@ class MyApp(ShowBase):
 		
 		#Turn on ambient and directional Light for better graphics
 		self.ambientLight = AmbientLight("ambientLight")
-		self.ambientLight.setColor(Vec4(.4, .4, .4, 1))
-		self.directionalLight = DirectionalLight("directionalLight")
-		self.directionalLight.setDirection(Vec3(-5, -5, -5))
-		self.directionalLight.setColor(Vec4(1, 1, 1, 1))
-		self.directionalLight.setSpecularColor(Vec4(1, 1, 1, 1))
+		self.ambientLight.setColor(Vec4(1, 1, 1, 1))
+		self.sunLight = PointLight('plight')
+		self.sunLight.setColor(VBase4(3, 3, 3, 1))
+		self.sLight = self.render.attachNewNode(self.sunLight)
+		self.sLight.setPos(350,300,150)
+		
+		
+		#self.directionalLight = DirectionalLight("directionalLight")
+		#self.directionalLight.setDirection(Vec3(-5, -5, -5))
+		#self.directionalLight.setColor(Vec4(1, 1, 1, 1))
+		#self.directionalLight.setSpecularColor(Vec4(1, 1, 1, 1))
+		#self.dLight = self.render.attachNewNode(self.directionalLight)
 		self.aLight = self.render.attachNewNode(self.ambientLight);
-		self.dLight = self.render.attachNewNode(self.directionalLight)
 		self.hutLight = self.tent.attachNewNode(PointLight('tentLight'))
 		self.hutLight.setPos(0,0,120)
 		
@@ -237,11 +245,13 @@ class MyApp(ShowBase):
 	def changeLights(self):
 		if self.lights == False:
 			self.render.setLight(self.aLight)
-			self.render.setLight(self.dLight)
+			self.render.setLight(self.sLight)
+			#self.render.setLight(self.dLight)
 			self.lights = True
 		else:
 			self.render.clearLight(self.aLight)
-			self.render.clearLight(self.dLight)
+			self.render.clearLight(self.sLight)
+			#self.render.clearLight(self.dLight)
 			self.lights = False
 		
 	def climbOnJet(self):
@@ -282,7 +292,7 @@ class MyApp(ShowBase):
 			props.setCursorHidden(True) 
 			base.win.requestProperties(props)
 			self.ambientLight.setColor(Vec4(.3, .3, .3, 1))
-			self.directionalLight.setDirection(Vec3(-5, -5, -5))
+			#self.directionalLight.setDirection(Vec3(-5, -5, -5))
 			
 			self.startBut.hide(); self.exitBut.hide(); self.optiontBut.hide(); self.aboutBut.hide()
 			self.transit.letterboxOff(2.5)
@@ -295,7 +305,7 @@ class MyApp(ShowBase):
 			props.setCursorHidden(False) 
 			base.win.requestProperties(props)
 			self.ambientLight.setColor(Vec4(.1, .1, .1, 1))
-			self.directionalLight.setDirection(Vec3( 5, 5, 5))	
+			#self.directionalLight.setDirection(Vec3( 5, 5, 5))	
 			
 			self.startBut.show(); self.exitBut.show(); self.optiontBut.show(); self.aboutBut.show()
 			self.transit.letterboxOn(2.5)
@@ -341,7 +351,7 @@ class MyApp(ShowBase):
 		
 		angleDegrees = task.time * 1.0
 		angleRadians = angleDegrees * (pi / 180.0)
-		self.sky.setHpr(angleDegrees, 0, 0)
+		self.sky.setHpr(0, 0, 0)
 		
 		if base.mouseWatcherNode.hasMouse() and not self.worldView:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
@@ -511,26 +521,33 @@ class MyApp(ShowBase):
 	def health(self):
 		if self.isMoving:
 			# self.countMonster=self.countMonster+1
-			self.boyHealth=self.boyHealth-0.5
-			print "self.countMonster = "+str(self.countMonster)
-			print "self.countMonster = "+str(self.countMonster)
+			self.boyHealth = self.boyHealth - 0.05
+			if self.boostCount > 0: 
+				self.boostCount = self.boostCount - 1
+			#print "self.boostCount = "+str(self.boostCount)
+			#print "self.boyHealth = "+str(self.boyHealth)
 			
 		else:
-			self.countMonster=self.countMonster-0.5
-			if self.health < 300:
-				self.boyHealth=self.boyHealth+0.5
-			print "self.countMonster = "+str(self.countMonster)
-			print "self.boyHealth = "+str(self.boyHealth)
+			#self.countMonster=self.countMonster-0.5
+			if self.boyHealth < 1000:
+				self.boyHealth = self.boyHealth + 0.05
+			if self.boostCount > 0: 
+				self.boostCount = self.boostCount - 1
+			#print "self.boostCount = "+str(self.boostCount)
+			#print "self.boyHealth = "+str(self.boyHealth)
 			
-		if (self.countMonster == 0):
-			seq1 = self.monster.posInterval(2, Point3(0, 2, 5))
-			seq1.start()
-			self.monster.loop("run")
-			textObject = OnscreenText(text = 'Game Over Monster Killed You!!!', pos = (0, 0.50), scale = 0.1)
-			#self.switchView()
-			
-		if (self.health == 0):
-			textObject = OnscreenText(text = 'Game Over', pos = (-1, 0.50), scale = 0.06)
+		if self.boostCount == 0:
+			self.boost = False
+		
+		if (self.boyHealth == 0):
+			textObject = OnscreenText(text = 'Game Over You are out of Your health', pos = (0, 0.50), scale = 0.1)
+			self.switchView()
+		# if (self.countMonster == 0):
+			# seq1 = self.monster.posInterval(2, Point3(0, 2, 5))
+			# seq1.start()
+			# self.monster.loop("run")
+			# textObject = OnscreenText(text = 'Game Over Monster Killed You!!!', pos = (0, 0.50), scale = 0.1)
+			# #self.switchView()
 			#self.switchView()		
 			
 		# if (self.countMonster > 100):
@@ -540,15 +557,27 @@ class MyApp(ShowBase):
 #These are the methods to move Ralph from his position as per the arrow keys
 	def boyMoveTask(self, task):
 		if self.hasStarted and self.hasResumed:
-			if self.keyMap["forward"] != 0:
-				self.boy.setY(self.boy, -35 * globalClock.getDt())
-				self.isMoving = True
-			if self.keyMap["left"] != 0:
-				self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
-				self.isMoving = True
-			if self.keyMap["right"] != 0:
-				self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
-				self.isMoving = True
+			self.health()
+			if not self.boost:
+				if self.keyMap["forward"] != 0:
+					self.boy.setY(self.boy, -35 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["left"] != 0:
+					self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["right"] != 0:
+					self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
+					self.isMoving = True
+			else:
+				if self.keyMap["forward"] != 0:
+					self.boy.setY(self.boy, -70 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["left"] != 0:
+					self.boy.setH(self.boy.getH() + 600 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["right"] != 0:
+					self.boy.setH(self.boy.getH() - 600 * globalClock.getDt())
+					self.isMoving = True
 			if not (self.keyMap["forward"] or self.keyMap["left"] or self.keyMap["right"]):
 				self.isMoving = False
 			if self.isMoving:
@@ -998,6 +1027,13 @@ class MyApp(ShowBase):
 		self.sun.setPos(350, 350, 150)
 		self.sun.setHpr(90,0,0)
 		self.sun.loop('shine')
+		
+		# dlight = DirectionalLight('dlight')
+		# dlight.setColor(VBase4(1, 1, 1, 1))
+		# dlnp = render.attachNewNode(dlight)
+		# dlnp.setHpr(0, 0, 0)
+		# self.sun.setLight(dlnp)
+		
 		self.trex = Actor("models/trex",{"eat":"models/trex-eat"})
 		self.trex.reparentTo(self.render)
 		self.trex.setScale(3)
@@ -1007,9 +1043,9 @@ class MyApp(ShowBase):
 		
 		self.sky = self.loader.loadModel("models/skysphere")
 		self.sky.reparentTo(self.render)
-		self.sky.setScale(2)
-		self.sky.setPos(0, 0, 0)
-		self.sky.setHpr(180,180,180)
+		self.sky.setScale(3)
+		self.sky.setPos(0, 0, -30)
+		self.sky.setHpr( -180, 0, 0)
 		
 		self.elephant = Actor("models/elephantmodel",{"fly":"models/elephantanimation"})
 		self.elephant.reparentTo(self.render)
