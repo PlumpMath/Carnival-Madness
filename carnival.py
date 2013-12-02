@@ -12,7 +12,7 @@ from direct.interval.IntervalGlobal import Sequence, Parallel
 from panda3d.core import Point3, CollisionPlane, Plane
 from direct.gui.OnscreenImage import OnscreenImage
 from panda3d.core import TransparencyAttrib
-import sys
+import sys, random
 from direct.gui.DirectGui import *
 from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionSphere, CollisionTraverser
 #import direct.directbase.DirectStart 
@@ -29,9 +29,27 @@ FULLSCREEN_BUT_TEXT = "Full Screen"
 FULLSCREEN_LABEL = "Enable or Disable Full Screen"
 SOUND_LABEL = "Enable or Disable Audio"
 AUDIO_BUT_TEXT = "Sound"
+GAME_OVER_LABEL = "ERRRR! THE MONSTER JUST NAILED YOU.\nYOUR SCORE : "
 RESOLUTION_LABEL = "Screen Resolution Size"
 LIGHT_BUT_TEXT = "Lights"
 LIGHTS_LABEL = "Toggle Lights"
+BACK_BUT_TEXT = "<--- BACK"
+EXIT_TEXT = "Are you sure you would like to exit the game? All your progress would be lost?"
+ 
+########################GAME STATES
+STATE_RESET = 1
+STATE_STARTED = 2
+STATE_PREFS = 3
+STATE_GAME_OVER = 4
+STATE_PAUSED = 5
+STATE_SCORE = 6
+STATE_EXIT = 7 
+ 
+#######################HEALTH VALUES
+#Total Health - 100
+#Lollipop - +2 
+#Mint - +2
+#GhostMode - No Collisions Applicable
  
 class MyApp(ShowBase):
 	def __init__(self):
@@ -50,6 +68,9 @@ class MyApp(ShowBase):
 		#textObject = OnscreenText(text = '[E]USE', pos = (-1, 0.50), scale = 0.06)
 		#To show the FPS
 		loadPrcFileData('','show-frame-rate-meter 1')
+				
+		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
+		base.disableMouse()
 		
 		self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
 		self.worldView = False
@@ -59,6 +80,8 @@ class MyApp(ShowBase):
 		self.nearSkyride = False
 		self.nearTent = False
 		self.nearHouse = False
+		self.nearCoaster = False
+		self.nearLollipop = False
 		self.lights = False
 		self.pose = False
 		self.nearBridge = False
@@ -67,15 +90,14 @@ class MyApp(ShowBase):
 		self.isFullScreen = False
 		self.hasStarted = False
 		self.hasResumed = False
-		self.boost = False
+		self.hasBoost = False
 		self.boostCount = 1000
-		
-		#These instance field counts distance b/w actor and monster while next one is health
-		self.countMonster = 300
-		self.boyHealth = 300
-				
-		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
-		base.disableMouse()
+		self.curScore = 0
+		self.ghostMode = False
+		self.curState = STATE_RESET
+	
+		#These instance field shows health of character
+		self.boyHealth = 100
 		
 		#self.loader.loadMusic('music/musicbox.ogg')
 		self.song = self.loader.loadSfx("audio/horror.ogg")
@@ -112,21 +134,21 @@ class MyApp(ShowBase):
 		self.taskMgr.add(self.cameraLightCollisionTask, "cameraLightCollisionTask")
 		
 		#Write all the methods to be done when you press a key!
-		self.accept("arrow_left-repeat", self.keys, ["left",1] )
-		self.accept("arrow_right-repeat", self.keys, ["right",1])
-		self.accept("arrow_up-repeat",self.keys, ["forward",1])
-		self.accept("arrow_down-repeat", self.keys, ["right",1])
-		self.accept("arrow_down-up", self.keys, ["back", 0])
+		self.accept("arrow_left", self.keys, ["left",1] )
+		self.accept("arrow_right", self.keys, ["right",1])
+		self.accept("arrow_up",self.keys, ["forward",1])
 		self.accept("arrow_up-up",self.keys, ["forward", 0])
 		self.accept("arrow_left-up",self.keys, ["left",0])
 		self.accept("arrow_right-up",self.keys, ["right", 0])
+		#self.accept("arrow_down-repeat", self.keys, ["right",1])
+		#self.accept("arrow_down-up", self.keys, ["back", 0])
 		#self.accept("arrow_down-up", self.stopWalk)
 		#self.accept("arrow_up-up",self.stopWalk)
 		#self.accept("arrow_left-up",self.stopWalk)
 		#self.accept("arrow_right-up",self.stopWalk)
 		#self.accept("v",self.switchView)
 		self.accept("e",self.switchToJet)
-		self.accept("escape", self.switchView)
+		self.accept("escape", self.switchState, [STATE_STARTED, STATE_PAUSED])
 		self.accept("l",self.changeLights)
 		self.accept("wheel_up",self.keys, ["wheel_up",1])
 		self.accept("wheel_down", self.keys, ["wheel_down",1])
@@ -152,6 +174,7 @@ class MyApp(ShowBase):
 		#Turn on the light effects and set world view for background of GUI
 		self.switchView()
 		self.changeLights()
+		#self.resetState()
 		
 	def animatethings(self):
 		
@@ -294,7 +317,7 @@ class MyApp(ShowBase):
 			self.ambientLight.setColor(Vec4(.3, .3, .3, 1))
 			#self.directionalLight.setDirection(Vec3(-5, -5, -5))
 			
-			self.startBut.hide(); self.exitBut.hide(); self.optiontBut.hide(); self.aboutBut.hide()
+			self.startBut.hide(); self.exitBut.hide(); self.optionsBut.hide(); self.aboutBut.hide()
 			self.transit.letterboxOff(2.5)
 		else:
 			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
@@ -307,15 +330,11 @@ class MyApp(ShowBase):
 			self.ambientLight.setColor(Vec4(.1, .1, .1, 1))
 			#self.directionalLight.setDirection(Vec3( 5, 5, 5))	
 			
-			self.startBut.show(); self.exitBut.show(); self.optiontBut.show(); self.aboutBut.show()
+			self.startBut.show(); self.exitBut.show(); self.optionsBut.show(); self.aboutBut.show()
 			self.transit.letterboxOn(2.5)
 			#Transitions(loader).fadeScreenColor(LVecBase4f(0.1,0.1,0.1,1))
 
 	def spinCameraTask(self, task):
-		#rn= RandomNumGen(500) 
-		#print rn.randint(0,400) 
-		#del rn
-		
 		angleDegrees = task.time * 6.0
 		angleRadians = angleDegrees * (pi / 180.0)
 		self.camera.setPos(320 * sin(angleRadians), -320.0 * cos(angleRadians), 30)
@@ -351,9 +370,37 @@ class MyApp(ShowBase):
 		
 		angleDegrees = task.time * 1.0
 		angleRadians = angleDegrees * (pi / 180.0)
-		self.sky.setHpr(0, 0, 0)
+		self.sky.setHpr(angleDegrees, 0, 0)
+
+		#Checks if we are near any of the rides inorder to create spatial awareness
+		carouselDist = (self.boy.getPos() - self.carousel.getPos()).length()
+		if carouselDist < 150 or carouselDist > -150:
+				self.nearCarousel = True
+		else:
+				self.nearCarousel = False
+		octopusDist = (self.boy.getPos() - self.octopus.getPos()).length()
+		if octopusDist < 150 or octopusDist > -150:
+				self.nearOctopus = True
+		else:
+				self.nearOctopus = False
+		tentDist = (self.boy.getPos() - self.tent.getPos()).length()
+		if tentDist < 150 or tentDist > -150:
+				self.nearTent = True
+		else:
+				self.nearTent = False
+		skyRideDist = (self.boy.getPos() - self.skyRide.getPos()).length()
+		if skyRideDist < 150 or skyRideDist > -150:
+				self.nearSkyride = True
+		else:
+				self.nearSkyride = False
+		coasterDist = (self.boy.getPos() - self.coaster.getPos()).length()
+		if coasterDist < 150 or coasterDist > -150:
+				self.nearCoaster = True
+		else:
+				self.nearCoaster = False
+		#print coasterDist
 		
-		if base.mouseWatcherNode.hasMouse() and not self.worldView:
+		if base.mouseWatcherNode.hasMouse() and self.curState == STATE_STARTED:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
 			#self.camera.setX(base.camera, -20 * globalClock.getDt())
@@ -376,13 +423,11 @@ class MyApp(ShowBase):
 			self.tent.setLight(self.hutLight)
 		else:
 			self.tent.clearLight(self.hutLight)
-			
 		if self.nearSkyride:
 			self.skyRideSeq.pause()
 		else:
 			if not self.skyRideSeq.isPlaying():
 				self.skyRideSeq.resume()
-				
 		if self.nearHouse:
 			if not self.song.status() == AudioSound.PLAYING:
 				if self.enableAudio:
@@ -391,7 +436,9 @@ class MyApp(ShowBase):
 		else:
 			if self.song.status() == self.song.PLAYING:
 				self.song.stop()
-				
+		# if self.nearCoaster:
+			# #Do something
+			# return
 		if not self.nearBridge:
 			self.boy.setZ(0)
 			
@@ -399,149 +446,71 @@ class MyApp(ShowBase):
 		self.collisionHandler1.sortEntries()
 		if self.collisionHandler1.getNumEntries() == 0:
 			self.startPos = self.boy.getPos()
-			self.nearCarousel = False
-			self.nearOctopus = False
-			self.nearSkyride = False
-			self.nearTent = False
-			self.nearHouse = False
-			self.nearBridge = False
-			#self.pose = False
+			# self.nearCarousel = False
+			# self.nearOctopus = False
+			# self.nearSkyride = False
+			# self.nearTent = False
+			# self.nearHouse = False
+			# self.nearBridge = False
+			# #self.pose = False
+			self.nearLollipop = False
 		else:
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
 				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
 				#print entry
-				if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearCarousel = True
-				elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearOctopus = True
-				elif "cTentNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearTent = True
-				elif "cSkyrideNode1" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName() or "cSkyrideNode2" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearSkyride = True
-				elif "cHouseNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearHouse = True
+				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					# self.nearCarousel = True
+				# elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					# self.nearOctopus = True
+				# elif "cTentNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					# self.nearTent = True
+				# elif "cSkyrideNode1" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName() or "cSkyrideNode2" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					# self.nearSkyride = True
+				# elif "cHouseNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					# self.nearHouse = True
 					
+				if "Lollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					print self.collisionHandler1.getEntry(i).getIntoNodePath(), self.collisionHandler1.getEntry(i).getInto()
+					self.curScore += 1
+					self.boyHealth = (self.boyHealth + 2)
+					if self.boyHealth > 100:
+						self.boyHealth = 100
+					self.nearLollipop = True
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2]-2.5)
+					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 3)
 					self.nearBridge = True
 					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
-			if not (self.nearCarousel or self.nearHouse or self.nearOctopus or self.nearSkyride or self.nearTent or self.nearBridge):
-			#if (self.nearCarousel and self.pose):
+			if not (self.nearBridge or self.nearLollipop):
 				self.boy.setPos(self.startPos)
 		return Task.cont
-	
-	def hideMainMenu(self):
-		self.startBut.hide()
-		self.optiontBut.hide()
-		self.exitBut.hide()
-		self.aboutBut.hide()
-		self.hasStarted = True
-		self.hasResumed = True
-	
-	def showMainMenu(self):
-		self.startBut.show()
-		self.optiontBut.show()
-		self.exitBut.show()
-		self.aboutBut.show()
-		self.hasResumed = False
-		self.hasStarted = False
-	
-	def showPrefs(self):
-		self.hideMainMenu()
-		#self.labelResolution.show()
-		self.labelFullScreen.show()
-		self.labelSound.show()
-		#self.resolutionSlider.show()
-		self.fullScreenBut.show()
-		self.backBut.show()
-		self.audioBut.show()
-		self.labelLights.show()
-		self.lightsBut.show()
-	
-	def hidePrefs(self):
-		#if self.isFullScreen:
-			#props = WindowProperties()
-			#if self.screenResolutionVal == 1:
-				#props.setSize(1600, 900)
-			#elif self.screenResolutionVal == 2:
-				#props.setSize(1366, 768)
-			#elif self.screenResolutionVal == 3:
-				#props.setSize(1024, 768)
-			#elif self.screenResolutionVal == 4:
-				#props.setSize(800, 600)
-			#props.setFullscreen(True)
-			#base.win.requestProperties(props)
-		#self.labelResolution.hide()
-		self.labelFullScreen.hide()
-		self.labelSound.hide()
-		#self.resolutionSlider.hide()
-		self.fullScreenBut.hide()
-		self.audioBut.hide()
-		self.backBut.hide()
-		self.showMainMenu()
-		self.labelLights.hide()
-		self.lightsBut.hide()
-	
-	def toggleLights(self,status):
-		self.changeLights()
 		
-	def setResolution(self):
-		if self.resolutionSlider['value']/25 == 4:
-			self.screenResolutionVal = 4
-			self.labelLights1['text'] = "Screen Resolution :- 1600 * 900"
-		elif self.resolutionSlider['value']/25 == 3:
-			self.screenResolutionVal = 3
-			self.labelLights1['text'] = "Screen Resolution :- 1366 * 768"
-		elif self.resolutionSlider['value']/25 == 2:
-			self.screenResolutionVal = 2
-			self.labelLights1['text'] = "Screen Resolution :- 1024 * 768"
-		elif self.resolutionSlider['value']/25 == 1:
-			self.screenResolutionVal = 1
-			self.labelLights1['text'] = "Screen Resolution :- 800 * 600"
-	
-	def toggleScreen(self,status):
-		props = WindowProperties()
-		if not status:
-			self.isFullScreen = False
-			props.setFullscreen(False)
-		else:
-			self.isFullScreen = True
-			props.setSize(1366, 768)
-			props.setFullscreen(True)
-		base.win.requestProperties(props)
-		
-	def toggleAudio(self,status):
-		if not status:
-			self.enableAudio = False
-		else:
-			self.enableAudio = True
-
 ###This method is used to change the health of actor which gets tired by running.
 	def health(self):
 		if self.isMoving:
 			# self.countMonster=self.countMonster+1
-			self.boyHealth = self.boyHealth - 0.05
+			self.boyHealth = self.boyHealth - 0.5
+			self.bar['value'] += self.boyHealth
 			if self.boostCount > 0: 
 				self.boostCount = self.boostCount - 1
 			#print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
+			print "self.boyHealth = "+str(self.boyHealth)
 			
 		else:
 			#self.countMonster=self.countMonster-0.5
-			if self.boyHealth < 1000:
-				self.boyHealth = self.boyHealth + 0.05
+			if self.boyHealth < 100:
+				self.boyHealth = self.boyHealth + 0.5
+				self.bar['value'] += self.boyHealth
 			if self.boostCount > 0: 
 				self.boostCount = self.boostCount - 1
 			#print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
+			print "self.boyHealth = "+str(self.boyHealth)
 			
 		if self.boostCount == 0:
-			self.boost = False
+			self.hasBoost = False
 		
-		if (self.boyHealth == 0):
-			textObject = OnscreenText(text = 'Game Over You are out of Your health', pos = (0, 0.50), scale = 0.1)
-			self.switchView()
+		if (self.boyHealth < 0 or self.boyHealth == 0):
+			self.switchState(STATE_STARTED, STATE_GAME_OVER)
 		# if (self.countMonster == 0):
 			# seq1 = self.monster.posInterval(2, Point3(0, 2, 5))
 			# seq1.start()
@@ -556,9 +525,9 @@ class MyApp(ShowBase):
 			
 #These are the methods to move Ralph from his position as per the arrow keys
 	def boyMoveTask(self, task):
-		if self.hasStarted and self.hasResumed:
+		if self.curState == STATE_STARTED:
 			self.health()
-			if not self.boost:
+			if not self.hasBoost:
 				if self.keyMap["forward"] != 0:
 					self.boy.setY(self.boy, -35 * globalClock.getDt())
 					self.isMoving = True
@@ -610,7 +579,45 @@ class MyApp(ShowBase):
 				#else:
 				#	self.boy.pose("walk", 5)
 			#self.health()
-		return Task.again
+		return Task.again	
+		
+	def gameOverState(self):
+		textObject = OnscreenText(text = 'Game Over You are out of Your health', pos = (0, 0.60), scale = 0.1)
+		self.switchView()
+		self.showGameOverMenu()
+		self.hideMainMenu()
+		
+	def resetState(self):
+		self.boy.setPos(5, -210, 0)
+		self.monster.setPos(0,-325, 5)
+		self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
+		self.worldView = True
+		self.hasJet = False
+		self.nearCarousel = False
+		self.nearOctopus = False
+		self.nearSkyride = False
+		self.nearTent = False
+		self.nearHouse = False
+		self.nearCoaster = False
+		self.nearLollipop = False
+		self.lights = False
+		self.pose = False
+		self.nearBridge = False
+		self.enableAudio = True
+		self.screenResolutionVal = 4
+		self.isFullScreen = False
+		self.hasStarted = False
+		self.hasResumed = False
+		self.hasBoost = False
+		self.boostCount = 1000
+		self.curScore = 0
+		self.ghostMode = False
+		
+		self.switchView()
+		#These instance field counts distance b/w actor and monster while next one is health
+		self.countMonster = 300
+		self.boyHealth = 100
+		#	for i in xrange(50):
 		
 	def keyUp(self):
 		self.boy.setY(self.boy, -35 * globalClock.getDt())
@@ -659,6 +666,109 @@ class MyApp(ShowBase):
 		#	self.isMoving = True
 		#	#####------>
 		#	#self.health()
+	
+	def hideMainMenu(self):
+		self.startBut.hide()
+		self.optionsBut.hide()
+		self.exitBut.hide()
+		self.aboutBut.hide()
+		#self.switchView()
+		#self.hasStarted = True
+		#self.hasResumed = True
+	
+	def showMainMenu(self):
+		self.startBut.show()
+		self.optionsBut.show()
+		self.exitBut.show()
+		self.aboutBut.show()
+		#self.hasResumed = False
+		#self.hasStarted = False
+	
+	def showPrefs(self):
+		#self.hideMainMenu()
+		#self.labelResolution.show()
+		self.labelFullScreen.show()
+		self.labelSound.show()
+		#self.resolutionSlider.show()
+		self.fullScreenBut.show()
+		self.backBut.show()
+		self.audioBut.show()
+		self.labelLights.show()
+		self.lightsBut.show()
+	
+	def hidePrefs(self):
+		#if self.isFullScreen:
+			#props = WindowProperties()
+			#if self.screenResolutionVal == 1:
+				#props.setSize(1600, 900)
+			#elif self.screenResolutionVal == 2:
+				#props.setSize(1366, 768)
+			#elif self.screenResolutionVal == 3:
+				#props.setSize(1024, 768)
+			#elif self.screenResolutionVal == 4:
+				#props.setSize(800, 600)
+			#props.setFullscreen(True)
+			#base.win.requestProperties(props)
+		#self.labelResolution.hide()
+		self.labelFullScreen.hide()
+		self.labelSound.hide()
+		#self.resolutionSlider.hide()
+		self.fullScreenBut.hide()
+		self.audioBut.hide()
+		self.backBut.hide()
+		self.showMainMenu()
+		self.labelLights.hide()
+		self.lightsBut.hide()
+		#self.hideGameOverMenu()
+	
+	def hideGameOverMenu(self):
+		#self.showMainMenu()
+		self.playAgainBut.hide()
+		self.submitScore.hide()
+		self.submitBut.hide()
+		self.backBut1.hide()
+		self.gameOverLabel.hide()
+	
+	def showGameOverMenu(self):
+		self.playAgainBut.show()
+		self.submitScore.show()
+		self.submitBut.show()
+		self.backBut1.show()
+		self.gameOverLabel.show()
+	
+	def toggleLights(self,status):
+		self.changeLights()
+		
+	def setResolution(self):
+		if self.resolutionSlider['value']/25 == 4:
+			self.screenResolutionVal = 4
+			self.labelLights1['text'] = "Screen Resolution :- 1600 * 900"
+		elif self.resolutionSlider['value']/25 == 3:
+			self.screenResolutionVal = 3
+			self.labelLights1['text'] = "Screen Resolution :- 1366 * 768"
+		elif self.resolutionSlider['value']/25 == 2:
+			self.screenResolutionVal = 2
+			self.labelLights1['text'] = "Screen Resolution :- 1024 * 768"
+		elif self.resolutionSlider['value']/25 == 1:
+			self.screenResolutionVal = 1
+			self.labelLights1['text'] = "Screen Resolution :- 800 * 600"
+	
+	def toggleScreen(self,status):
+		props = WindowProperties()
+		if not status:
+			self.isFullScreen = False
+			props.setFullscreen(False)
+		else:
+			self.isFullScreen = True
+			props.setSize(1366, 768)
+			props.setFullscreen(True)
+		base.win.requestProperties(props)
+		
+	def toggleAudio(self,status):
+		if not status:
+			self.enableAudio = False
+		else:
+			self.enableAudio = True
 			
 	def setupCollisionNodes(self):
 		#Collision Nodes are created here and attached to spheres
@@ -666,16 +776,16 @@ class MyApp(ShowBase):
 		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
 		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
 		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
-		self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
-		self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
-		self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
-		self.cCarousel.node().addSolid(CollisionSphere(0, 0, 0, 30))
-		self.cOctopus = self.octopus.attachNewNode(CollisionNode('cOctopusNode'))
-		self.cOctopus.node().addSolid(CollisionSphere(0, 0, 0, 65))
-		self.cTent = self.tent.attachNewNode(CollisionNode('cTentNode'))
-		self.cTent.node().addSolid(CollisionSphere(0, 0, 0, 65))
-		self.cCoaster = self.coaster.attachNewNode(CollisionNode('cCoasterNode'))
-		self.cCoaster.node().addSolid(CollisionSphere(0, 0, 0, 170))
+		#self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
+		#self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
+		#self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
+		#self.cCarousel.node().addSolid(CollisionSphere(0, 0, 0, 30))
+		#self.cOctopus = self.octopus.attachNewNode(CollisionNode('cOctopusNode'))
+		#self.cOctopus.node().addSolid(CollisionSphere(0, 0, 0, 65))
+		#self.cTent = self.tent.attachNewNode(CollisionNode('cTentNode'))
+		#self.cTent.node().addSolid(CollisionSphere(0, 0, 0, 65))
+		#self.cCoaster = self.coaster.attachNewNode(CollisionNode('cCoasterNode'))
+		#self.cCoaster.node().addSolid(CollisionSphere(0, 0, 0, 170))
 		self.cBridge = self.bridge.attachNewNode(CollisionNode('cBridge'))
 		self.cBridge.node().addSolid(CollisionSphere(0, 0, 0, 25))
 		self.cRingtoss = self.ringToss.attachNewNode(CollisionNode('cRingtoss'))
@@ -722,12 +832,16 @@ class MyApp(ShowBase):
 		self.collisionHandler1 = CollisionHandlerQueue()
 		self.cTrav.addCollider(self.cBoy, self.collisionHandler1)
 		
-	def quit(self):
-		taskMgr.doMethodLater(2.6 ,sys.exit,'Exiting')
-		self.transit.irisOut(2.5)
+	def quit(self, args):
+		if args:
+			taskMgr.doMethodLater(2.6 ,sys.exit,'Exiting')
+			self.transit.irisOut(2.5)
+		else:
+			self.askDialog.cleanup()
 	
 	def loadAllModels(self):
 	  
+		self.bar = DirectWaitBar(text = "", value = 100, pos = (0.9,0.4,0.8),scale = 0.3)
 		#FadeIn the First Time when app starts
 		self.transit = Transitions(loader)
 		#self.transit.irisIn(2.5)
@@ -1111,122 +1225,146 @@ class MyApp(ShowBase):
 		seq6 = self.goose.hprInterval(0, Point3(0, 0, 0), startHpr = Point3(130, 0, 0))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6)
 		seq.loop()
-		#self.lollopop[50] 
-		self.lollipop = self.loader.loadModel("models/lollipop")
-		self.lollipop.reparentTo(self.render)
-		self.lollipop.setScale(15)
-		self.lollipop.setPos(150, 150, 0)
-		self.lollipop1 = self.loader.loadModel("models/lollipop")
-		self.lollipop1.reparentTo(self.render)
-		self.lollipop1.setScale(15)
-		self.lollipop1.setPos(150, 320, 0)
-		self.lollipop2 = self.loader.loadModel("models/lollipop")
-		self.lollipop2.reparentTo(self.render)
-		self.lollipop2.setScale(15)
-		self.lollipop2.setPos(345, 40, 0)
-		self.lollipop3 = self.loader.loadModel("models/lollipop")
-		self.lollipop3.reparentTo(self.render)
-		self.lollipop3.setScale(15)
-		self.lollipop3.setPos(-280, -45, 0)
-		self.lollipop4 = self.loader.loadModel("models/lollipop")
-		self.lollipop4.reparentTo(self.render)
-		self.lollipop4.setScale(15)
-		self.lollipop4.setPos(-310, -90, 0)
-		self.lollipop5 = self.loader.loadModel("models/lollipop")
-		self.lollipop5.reparentTo(self.render)
-		self.lollipop5.setScale(15)
-		self.lollipop5.setPos(-325, -290, 0)
-		self.lollipop6 = self.loader.loadModel("models/lollipop")
-		self.lollipop6.reparentTo(self.render)
-		self.lollipop6.setScale(15)
-		self.lollipop6.setPos(350, 300, 0)
-		self.lollipop7 = self.loader.loadModel("models/lollipop")
-		self.lollipop7.reparentTo(self.render)
-		self.lollipop7.setScale(15)
-		self.lollipop7.setPos(-350, 100, 0)
-		self.lollipop8 = self.loader.loadModel("models/lollipop")
-		self.lollipop8.reparentTo(self.render)
-		self.lollipop8.setScale(15)
-		self.lollipop8.setPos(-300, 310, 0)
-		self.lollipop9 = self.loader.loadModel("models/lollipop")
-		self.lollipop9.reparentTo(self.render)
-		self.lollipop9.setScale(15)
-		self.lollipop9.setPos(20, -130, 0)
-		self.lollipop10 = self.loader.loadModel("models/lollipop")
-		self.lollipop10.reparentTo(self.render)
-		self.lollipop10.setScale(15)
-		self.lollipop10.setPos(40, 20, 10)
-		self.lollipop11 = self.loader.loadModel("models/lollipop")
-		self.lollipop11.reparentTo(self.render)
-		self.lollipop11.setScale(15)
-		self.lollipop11.setPos(340, -300, 0)
-		self.lollipop12 = self.loader.loadModel("models/lollipop")
-		self.lollipop12.reparentTo(self.render)
-		self.lollipop12.setScale(15)
-		self.lollipop12.setPos(-180, 200, 0)
-		self.lollipop13 = self.loader.loadModel("models/lollipop")
-		self.lollipop13.reparentTo(self.render)
-		self.lollipop13.setScale(15)
-		self.lollipop13.setPos(180, 200, 0)
-		self.lollipop14 = self.loader.loadModel("models/lollipop")
-		self.lollipop14.reparentTo(self.render)
-		self.lollipop14.setScale(15)
-		self.lollipop14.setPos(-144, -150, 0)
-		self.mint = self.loader.loadModel("models/mint")
-		self.mint.reparentTo(self.render)
-		self.mint.setScale(35)
-		self.mint.setPos(-114, -150, 3)
-		self.mint.setHpr(90, 0, 90)
-		self.mint1 = self.loader.loadModel("models/mint")
-		self.mint1.reparentTo(self.render)
-		self.mint1.setScale(35)
-		self.mint1.setPos(160, -80, 3)
-		self.mint1.setHpr(-30, 0, 90)
-		self.mint2 = self.loader.loadModel("models/mint")
-		self.mint2.reparentTo(self.render)
-		self.mint2.setScale(35)
-		self.mint2.setPos(340, -220, 3)
-		self.mint2.setHpr(90, 0, 90)
-		self.mint3 = self.loader.loadModel("models/mint")
-		self.mint3.reparentTo(self.render)
-		self.mint3.setScale(35)
-		self.mint3.setPos(-40, -40, 3)
-		self.mint3.setHpr(90, 0, 90)
-		self.mint4 = self.loader.loadModel("models/mint")
-		self.mint4.reparentTo(self.render)
-		self.mint4.setScale(35)
-		self.mint4.setPos(-32, 45, 3)
-		self.mint4.setHpr(0, 0, 90)
-		self.mint5 = self.loader.loadModel("models/mint")
-		self.mint5.reparentTo(self.render)
-		self.mint5.setScale(25)
-		self.mint5.setPos(255, 230, 3)
-		self.mint5.setHpr(90, 0, 90)
-		self.mint6 = self.loader.loadModel("models/mint")
-		self.mint6.reparentTo(self.render)
-		self.mint6.setScale(35)
-		self.mint6.setPos(320, 270, 3)
-		self.mint6.setHpr(90, 0, 90)
-		self.mint7 = self.loader.loadModel("models/mint")
-		self.mint7.reparentTo(self.render)
-		self.mint7.setScale(35)
-		self.mint7.setPos(190, 30, 3)
-		self.mint7.setHpr(0, 0, 90)
-		self.mint8 = self.loader.loadModel("models/mint")
-		self.mint8.reparentTo(self.render)
-		self.mint8.setScale(35)
-		self.mint8.setPos(-60, -240, 3)
-		self.mint8.setHpr(90, 0, 90)
-		self.mint9 = self.loader.loadModel("models/mint")
-		self.mint9.reparentTo(self.render)
-		self.mint9.setScale(35)
-		self.mint9.setPos(-160, 20, 3)
-		self.mint9.setHpr(90, 0, 90)
-		self.mint10 = self.loader.loadModel("models/mint")
-		self.mint10.reparentTo(self.render)
-		self.mint10.setScale(35)
-		self.mint10.setPos(30, -300, 3)
-		self.mint10.setHpr(90, 0, 90)
+		
+		self.lollipop = []
+		for i in xrange(50):
+			lollipop = self.loader.loadModel("models/lollipop")
+			lollipop.reparentTo(self.render)
+			lollipop.setScale(15)
+			x = random.randint(-300,300)
+			y = random.randint(-300,300)
+			lollipop.setPos(x, y, 0)
+			self.lollipop.append(lollipop)
+		
+		self.mint = []
+		for i in xrange(50):
+			mint = self.loader.loadModel("models/mint")
+			mint.reparentTo(self.render)
+			mint.setScale(15)
+			x = random.randint(-300,300)
+			y = random.randint(-300,300)
+			mint.setPos(x, y, 5)
+			self.mint.append(mint)
+			mint.setR(90)
+			mint.setH(90)
+
+		# self.lollipop = self.loader.loadModel("models/lollipop")
+		# self.lollipop.reparentTo(self.render)
+		# self.lollipop.setScale(15)
+		# self.lollipop.setPos(150, 150, 0)
+		# self.lollipop1 = self.loader.loadModel("models/lollipop")
+		# self.lollipop1.reparentTo(self.render)
+		# self.lollipop1.setScale(15)
+		# self.lollipop1.setPos(150, 320, 0)
+		# self.lollipop2 = self.loader.loadModel("models/lollipop")
+		# self.lollipop2.reparentTo(self.render)
+		# self.lollipop2.setScale(15)
+		# self.lollipop2.setPos(345, 40, 0)
+		# self.lollipop3 = self.loader.loadModel("models/lollipop")
+		# self.lollipop3.reparentTo(self.render)
+		# self.lollipop3.setScale(15)
+		# self.lollipop3.setPos(-280, -45, 0)
+		# self.lollipop4 = self.loader.loadModel("models/lollipop")
+		# self.lollipop4.reparentTo(self.render)
+		# self.lollipop4.setScale(15)
+		# self.lollipop4.setPos(-310, -90, 0)
+		# self.lollipop5 = self.loader.loadModel("models/lollipop")
+		# self.lollipop5.reparentTo(self.render)
+		# self.lollipop5.setScale(15)
+		# self.lollipop5.setPos(-325, -290, 0)
+		# self.lollipop6 = self.loader.loadModel("models/lollipop")
+		# self.lollipop6.reparentTo(self.render)
+		# self.lollipop6.setScale(15)
+		# self.lollipop6.setPos(350, 300, 0)
+		# self.lollipop7 = self.loader.loadModel("models/lollipop")
+		# self.lollipop7.reparentTo(self.render)
+		# self.lollipop7.setScale(15)
+		# self.lollipop7.setPos(-350, 100, 0)
+		# self.lollipop8 = self.loader.loadModel("models/lollipop")
+		# self.lollipop8.reparentTo(self.render)
+		# self.lollipop8.setScale(15)
+		# self.lollipop8.setPos(-300, 310, 0)
+		# self.lollipop9 = self.loader.loadModel("models/lollipop")
+		# self.lollipop9.reparentTo(self.render)
+		# self.lollipop9.setScale(15)
+		# self.lollipop9.setPos(20, -130, 0)
+		# self.lollipop10 = self.loader.loadModel("models/lollipop")
+		# self.lollipop10.reparentTo(self.render)
+		# self.lollipop10.setScale(15)
+		# self.lollipop10.setPos(40, 20, 10)
+		# self.lollipop11 = self.loader.loadModel("models/lollipop")
+		# self.lollipop11.reparentTo(self.render)
+		# self.lollipop11.setScale(15)
+		# self.lollipop11.setPos(340, -300, 0)
+		# self.lollipop12 = self.loader.loadModel("models/lollipop")
+		# self.lollipop12.reparentTo(self.render)
+		# self.lollipop12.setScale(15)
+		# self.lollipop12.setPos(-180, 200, 0)
+		# self.lollipop13 = self.loader.loadModel("models/lollipop")
+		# self.lollipop13.reparentTo(self.render)
+		# self.lollipop13.setScale(15)
+		# self.lollipop13.setPos(180, 200, 0)
+		# self.lollipop14 = self.loader.loadModel("models/lollipop")
+		# self.lollipop14.reparentTo(self.render)
+		# self.lollipop14.setScale(15)
+		# self.lollipop14.setPos(-144, -150, 0)
+		
+		# self.mint = self.loader.loadModel("models/mint")
+		# self.mint.reparentTo(self.render)
+		# self.mint.setScale(35)
+		# self.mint.setPos(-114, -150, 3)
+		# self.mint.setHpr(90, 0, 90)
+		# self.mint1 = self.loader.loadModel("models/mint")
+		# self.mint1.reparentTo(self.render)
+		# self.mint1.setScale(35)
+		# self.mint1.setPos(160, -80, 3)
+		# self.mint1.setHpr(-30, 0, 90)
+		# self.mint2 = self.loader.loadModel("models/mint")
+		# self.mint2.reparentTo(self.render)
+		# self.mint2.setScale(35)
+		# self.mint2.setPos(340, -220, 3)
+		# self.mint2.setHpr(90, 0, 90)
+		# self.mint3 = self.loader.loadModel("models/mint")
+		# self.mint3.reparentTo(self.render)
+		# self.mint3.setScale(35)
+		# self.mint3.setPos(-40, -40, 3)
+		# self.mint3.setHpr(90, 0, 90)
+		# self.mint4 = self.loader.loadModel("models/mint")
+		# self.mint4.reparentTo(self.render)
+		# self.mint4.setScale(35)
+		# self.mint4.setPos(-32, 45, 3)
+		# self.mint4.setHpr(0, 0, 90)
+		# self.mint5 = self.loader.loadModel("models/mint")
+		# self.mint5.reparentTo(self.render)
+		# self.mint5.setScale(25)
+		# self.mint5.setPos(255, 230, 3)
+		# self.mint5.setHpr(90, 0, 90)
+		# self.mint6 = self.loader.loadModel("models/mint")
+		# self.mint6.reparentTo(self.render)
+		# self.mint6.setScale(35)
+		# self.mint6.setPos(320, 270, 3)
+		# self.mint6.setHpr(90, 0, 90)
+		# self.mint7 = self.loader.loadModel("models/mint")
+		# self.mint7.reparentTo(self.render)
+		# self.mint7.setScale(35)
+		# self.mint7.setPos(190, 30, 3)
+		# self.mint7.setHpr(0, 0, 90)
+		# self.mint8 = self.loader.loadModel("models/mint")
+		# self.mint8.reparentTo(self.render)
+		# self.mint8.setScale(35)
+		# self.mint8.setPos(-60, -240, 3)
+		# self.mint8.setHpr(90, 0, 90)
+		# self.mint9 = self.loader.loadModel("models/mint")
+		# self.mint9.reparentTo(self.render)
+		# self.mint9.setScale(35)
+		# self.mint9.setPos(-160, 20, 3)
+		# self.mint9.setHpr(90, 0, 90)
+		# self.mint10 = self.loader.loadModel("models/mint")
+		# self.mint10.reparentTo(self.render)
+		# self.mint10.setScale(35)
+		# self.mint10.setPos(30, -300, 3)
+		# self.mint10.setHpr(90, 0, 90)
+		
 		self.boy = Actor("models/ralph",{"walk":"models/ralph-walk","run":"models/ralph-run"})
 		self.boy.reparentTo(self.render)
 		self.boy.setPos(5, -210, 0)
@@ -1254,9 +1392,9 @@ class MyApp(ShowBase):
 		
 		#Set up the main GUI Menu shown at the startup
 		maps = loader.loadModel('models/button_maps')
-		self.startBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = START_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchView)
-		self.exitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = EXIT_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.quit)
-		self.optiontBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.showPrefs)
+		self.startBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = START_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_RESET, STATE_STARTED])
+		self.exitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = EXIT_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_PAUSED, STATE_EXIT])
+		self.optionsBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_RESET, STATE_PREFS])
 		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
 		
 		#Set up the preferences GUI menu and then hide it
@@ -1272,8 +1410,115 @@ class MyApp(ShowBase):
 		self.lightsBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = LIGHT_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.2), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.toggleLights, indicatorValue = 1)
 		self.labelLights = DirectLabel(text = LIGHTS_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.2))
 		
-		self.backBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = "<--- Back ", text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.hidePrefs)
-		self.hidePrefs()
+		self.backBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = BACK_BUT_TEXT, text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_PREFS, STATE_RESET])
+
 		
+		self.gameOverLabel = DirectLabel(text = GAME_OVER_LABEL + str(self.curScore), scale = 0.1, pos = (-0.3 , 0, 0.6))
+		self.submitScore = DirectEntry(text = "" , scale = (0.1, 0.07, 0.06),pos = (-1, 0, 0.3), initialText="Gamers call you?", numLines = 2,focus=1)		
+		self.submitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "SUBMIT SCORE", text_scale = 0.2, pos = (0.8, 1, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.hidePrefs)
+		self.playAgainBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "PLAY AGAIN", text_scale = 0.2, pos = (0, 1, 0), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_STARTED])
+		self.backBut1 = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = BACK_BUT_TEXT, text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_RESET])	
+			
+		self.hidePrefs()
+		self.hideGameOverMenu()
+				
+	def switchState(self, curState, nextState):
+		if curState == STATE_RESET and nextState == STATE_STARTED:
+			self.hideMainMenu()
+			taskMgr.remove("SpinCameraTask")
+			props = WindowProperties()
+			props.setCursorHidden(True) 
+			base.win.requestProperties(props)
+			self.ambientLight.setColor(Vec4(.3, .3, .3, 1))
+			self.transit.letterboxOff(2.5)
+		elif curState == STATE_RESET and nextState == STATE_PREFS: 
+			self.hideMainMenu()
+			self.showPrefs()
+			
+		#All these will be when current state is Prefs
+		elif curState == STATE_PREFS and nextState == STATE_RESET:
+			self.hidePrefs()
+			self.showMainMenu()
+		
+		#All these will be when current state is started
+		elif curState == STATE_STARTED and nextState == STATE_PAUSED:
+			self.transit.letterboxOn(2.5)
+			self.showMainMenu()
+			self.optionsBut.hide()
+			self.aboutBut.hide()
+			self.optionsBut.hide()
+			self.startBut['text'] = "RESUME GAME"
+			props = WindowProperties()
+			props.setCursorHidden(False) 
+			base.win.requestProperties(props)
+			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+		elif curState == STATE_STARTED and nextState == STATE_GAME_OVER:
+			self.showGameOverMenu()
+			self.transit.letterboxOn(2.5)
+			props = WindowProperties()
+			props.setCursorHidden(False) 
+			base.win.requestProperties(props)
+		
+		#All these will be when current state are Paused
+		elif curState == STATE_PAUSED and nextState == STATE_STARTED:
+			self.transit.letterboxOff(2.5)
+			self.hideMainMenu()
+			self.startBut['text'] = "PLAY"
+			props = WindowProperties()
+			props.setCursorHidden(True) 
+			base.win.requestProperties(props)
+			taskMgr.remove("SpinCameraTask")
+		elif curState == STATE_PAUSED and nextState == STATE_EXIT:
+			#maps = loader.loadModel('models/button_maps')
+			#geomList = [(maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable'))]
+			self.askDialog = YesNoDialog(dialogName="YesNoCancelDialog", text = EXIT_TEXT, buttonTextList = ["YES", "NO"], buttonSize = [-0.5,0.5,-0.05,0.1], fadeScreen = 1, command = self.quit)
+		
+		elif curState == STATE_GAME_OVER and nextState == STATE_STARTED:
+			self.boy.setPos(5, -210, 0)
+			self.monster.setPos(0,-325, 5)
+			self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
+			self.hasJet = False
+			self.nearCarousel = False
+			self.nearOctopus = False
+			self.nearSkyride = False
+			self.nearTent = False
+			self.nearHouse = False
+			self.nearCoaster = False
+			self.nearLollipop = False
+			self.pose = False
+			self.nearBridge = False
+			self.hasBoost = False
+			self.boostCount = 1000
+			self.curScore = 0
+			self.ghostMode = False
+			self.countMonster = 300
+			self.boyHealth = 100
+			self.hideGameOverMenu()
+		elif curState == STATE_GAME_OVER and nextState == STATE_RESET:
+			self.boy.setPos(5, -210, 0)
+			self.monster.setPos(0,-325, 5)
+			self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
+			self.hasJet = False
+			self.nearCarousel = False
+			self.nearOctopus = False
+			self.nearSkyride = False
+			self.nearTent = False
+			self.nearHouse = False
+			self.nearCoaster = False
+			self.nearLollipop = False
+			self.pose = False
+			self.nearBridge = False
+			self.hasBoost = False
+			self.boostCount = 1000
+			self.curScore = 0
+			self.ghostMode = False
+			self.showMainMenu()
+			self.hideGameOverMenu()
+			
+			self.countMonster = 300
+			self.boyHealth = 100
+			
+		
+		self.curState = nextState		
 app = MyApp()
 app.run()
