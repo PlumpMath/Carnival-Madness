@@ -63,8 +63,17 @@ class MyApp(ShowBase):
 		ShowBase.__init__(self)
 		
 		#Set background Image
-		#imageObject = OnscreenImage(parent = render2dp, image = 'image/nature.jpg', pos = (0, 0, 0), scale = 1)
-		#imageObject.setTransparency(TransparencyAttrib.MAlpha)
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.jpg', pos = (0.51, 0, 0.8), scale = (0.03, 0.05, 0.05))
+		imageObject.setTransparency(TransparencyAttrib.MAlpha)
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/speed.jpg', pos = (0.51, 0, 0.7), scale = (0.03, 0.05, 0.05))
+		imageObject.setTransparency(TransparencyAttrib.MAlpha)
+		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.jpg', pos = (-0.3, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		imageObject1.setTransparency(TransparencyAttrib.MAlpha)
+		OnscreenText(text = ' X', pos = (-1.6, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.jpg', pos = (-0.9, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		imageObject2.setTransparency(TransparencyAttrib.MAlpha)
+		OnscreenText(text = ' X', pos = (-0.45, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		
 		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#To show 2D text on Screen
 		#textObject = OnscreenText(text = 'Carnival & Ralph!', pos = (0.1, 0.9), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
@@ -98,13 +107,14 @@ class MyApp(ShowBase):
 		self.hasStarted = False
 		self.hasResumed = False
 		self.hasBoost = False
-		self.boostCount = 100
-		self.curScore = 0
 		self.ghostMode = False
 		self.curState = STATE_RESET
 	
 		#These instance field shows health of character
 		self.boyHealth = 100
+		self.boostCount = 100
+		self.curScore = 0
+		self.noOfLives = 2
 		
 		self.themeSong = self.loader.loadMusic('audio/game.wav')
 		self.hauntedHouseSong = self.loader.loadSfx("audio/horror.ogg")
@@ -487,6 +497,8 @@ class MyApp(ShowBase):
 					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].show()
 					self.curScore += 1
 					self.boyHealth = (self.boyHealth + 5)
+					#self.countLabel[str(self.curScore)]
+					self.countLabel["text"] = str(self.curScore)
 					if self.boyHealth > 100:
 						self.boyHealth = 100
 						self.healthBar['value'] = 100
@@ -543,7 +555,13 @@ class MyApp(ShowBase):
 			self.hasBoost = False
 		
 		if (self.boyHealth < 0 or self.boyHealth == 0):
-			self.switchState(STATE_STARTED, STATE_GAME_OVER)
+			if self.noOfLives == 0:
+				self.switchState(STATE_STARTED, STATE_GAME_OVER)
+			else:
+				self.noOfLives -= 1
+				self.boyHealth = 100
+				self.healthBar['value'] = 100
+				self.lifeLabel["text"] = str(self.noOfLives)
 		# if (self.countMonster == 0):
 			# seq1 = self.monster.posInterval(2, Point3(0, 2, 5))
 			# seq1.start()
@@ -619,40 +637,7 @@ class MyApp(ShowBase):
 		self.switchView()
 		self.showGameOverMenu()
 		self.hideMainMenu()
-		
-	def resetState(self):
-		self.boy.setPos(5, -210, 0)
-		self.monster.setPos(0,-325, 5)
-		self.keyMap = {"left":0, "right":0, "forward":0, "back":0}
-		self.worldView = True
-		self.hasJet = False
-		self.nearCarousel = False
-		self.nearOctopus = False
-		self.nearSkyride = False
-		self.nearTent = False
-		self.nearHouse = False
-		self.nearCoaster = False
-		self.nearLollipop = False
-		self.nearMint = False
-		self.lights = False
-		self.pose = False
-		self.nearBridge = False
-		self.enableAudio = True
-		self.screenResolutionVal = 4
-		self.isFullScreen = False
-		self.hasStarted = False
-		self.hasResumed = False
-		self.hasBoost = False
-		self.boostCount = 100
-		self.curScore = 0
-		self.ghostMode = False
-		
-		self.switchView()
-		#These instance field counts distance b/w actor and monster while next one is health
-		self.countMonster = 300
-		self.boyHealth = 100
-		#	for i in xrange(50):
-		
+	
 	def keyUp(self):
 		self.boy.setY(self.boy, -35 * globalClock.getDt())
 		#self.boy.setY(self.boy.getY() + 2)
@@ -1479,17 +1464,16 @@ class MyApp(ShowBase):
 		self.hidePrefs()
 		self.hideGameOverMenu()
 		
-		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (0.9,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
-		self.powerBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (0.9,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
-		#self.heartImage = OnscreenImage(image = "models/heart.jpeg", pos = (-0.5, 0, 0.02), scale = 0.4, color = (1, 1, 1, 0.6))
-		#sself.myImage.setTransparency(TransparencyAttrib.MAlpha)
+		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
+		self.powerBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
 		self.setGameElementVisiblity(False)
 		
 	def setGameElementVisiblity(self,args):
 		if args:
 			self.powerBar.show()
 			self.healthBar.show()
-			
+			self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
+			self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
 		else:
 			self.healthBar.hide()
 			self.powerBar.hide()
@@ -1527,6 +1511,7 @@ class MyApp(ShowBase):
 			taskMgr.add(self.spinCameraTask, "SpinCameraTask")
 		elif curState == STATE_STARTED and nextState == STATE_GAME_OVER:
 			self.showGameOverMenu()
+			self.gameOverLabel["text"] = GAME_OVER_LABEL + str(self.curScore)
 			self.transit.letterboxOn(2.5)
 			props = WindowProperties()
 			props.setCursorHidden(False) 
@@ -1565,6 +1550,7 @@ class MyApp(ShowBase):
 			self.hasBoost = False
 			self.boostCount = 100
 			self.curScore = 0
+			self.noOfLives = 2
 			self.ghostMode = False
 			self.countMonster = 300
 			self.boyHealth = 100
@@ -1590,6 +1576,7 @@ class MyApp(ShowBase):
 			self.hasBoost = False
 			self.boostCount = 100
 			self.curScore = 0
+			self.noOfLives = 2
 			self.ghostMode = False
 			self.showMainMenu()
 			self.hideGameOverMenu()
