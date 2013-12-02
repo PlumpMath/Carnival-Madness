@@ -109,7 +109,7 @@ class MyApp(ShowBase):
 		self.hasStarted = False
 		self.hasResumed = False
 		self.hasBoost = False
-		self.ghostMode = False
+		self.hasGhostPower = False
 		self.curState = STATE_RESET
 	
 		#These instance field shows health of character
@@ -415,10 +415,16 @@ class MyApp(ShowBase):
 				self.nearCoaster = True
 		else:
 				self.nearCoaster = False
+		monsterDist = (self.boy.getPos() - self.monster.getPos()).length()
+		if monsterDist < 17:
+				self.nearMonster = True
+		else:
+				self.nearMonster = False
 		
 		if base.mouseWatcherNode.hasMouse() and self.curState == STATE_STARTED:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
+			base.camera.lookAt(self.boy)
 			#self.camera.setX(base.camera, -20 * globalClock.getDt())
 		if self.enableAudio:
 			if not self.themeSong.status() == self.themeSong.PLAYING:
@@ -461,6 +467,9 @@ class MyApp(ShowBase):
 			# return
 		if not self.nearBridge:
 			self.boy.setZ(0)
+		if self.nearMonster:
+			self.boyHealth -= 2
+			self.healthBar['value'] = self.boyHealth
 			
 		self.cTrav.traverse(render)
 		self.collisionHandler1.sortEntries()
@@ -476,11 +485,11 @@ class MyApp(ShowBase):
 			self.nearLollipop = False
 			self.nearMint = False
 			self.nearMonster = False
+			self.nearElixir = False
 		else:
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
 				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
-				#print entry
 				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearCarousel = True
 				# elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
@@ -494,6 +503,7 @@ class MyApp(ShowBase):
 					
 				x = random.randint(-350,350)
 				y = random.randint(-350,350)
+				z = random.randint(0,1)
 				if "cLollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].hide()
 					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].setPos(x,y,0)
@@ -518,12 +528,25 @@ class MyApp(ShowBase):
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 2.5)
 					self.nearBridge = True
-				if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearMonster = True
-					self.boyHealth -= 2
-					self.healthBar['value'] = self.boyHealth
-			if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
-				self.boy.setPos(self.startPos)
+				#if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+				#	self.nearMonster = True
+				#	self.boyHealth -= 2
+				#	self.boyHealth -= 2;self.healthBar['value'] 	= self.boyHealth
+				if "cBottleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.boostCount = 100
+					self.powerBar['value'] = 100
+					self.hasBoost = True
+					self.cBoy.hide()
+					self.hasGhostPower = False
+				if "cCandleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.powerBar['value'] = 100
+					self.cBoy.show()
+					self.hasGhostPower = True
+					self.hasBoost = False
+			
+			if not self.hasGhostPower:
+				if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
+					self.boy.setPos(self.startPos)
 		return Task.cont
 		
 ###This method is used to change the health of actor which gets tired by running.
@@ -536,14 +559,14 @@ class MyApp(ShowBase):
 				self.boostCount = self.boostCount - DECR_POWER
 				self.powerBar['value'] -= DECR_POWER
 			if self.boostCount < 0 or self.boostCount == 0:
-				 self.boostCount = 0
-				 self.powerBar['value'] = 0
-				 self.hasBoost = False
-			#print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
-			
+				self.boostCount = 0
+				self.powerBar['value'] = 0
+				if self.hasGhostPower:
+					self.hasGhostPower = False
+					self.cBoy.hide()
+				if self.hasBoost:
+					self.hasBoost = False
 		else:
-			#self.countMonster=self.countMonster-0.5
 			if self.boyHealth < 100:
 				self.boyHealth = self.boyHealth + INCR_HEALTH
 				self.healthBar['value'] += INCR_HEALTH
@@ -551,12 +574,14 @@ class MyApp(ShowBase):
 				self.boostCount = self.boostCount - DECR_POWER
 				self.powerBar['value'] -= DECR_POWER
 			if self.boostCount < 0 or self.boostCount == 0:
-				 self.boostCount = 0
-				 self.powerBar['value'] = 0
-				 self.hasBoost = False
-				 #print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
-			
+				self.boostCount = 0
+				self.powerBar['value'] = 0
+				if self.hasGhostPower:
+					self.hasGhostPower = False
+					self.cBoy.hide()
+				if self.hasBoost:
+					self.hasBoost = False
+
 		if self.boostCount == 0:
 			self.hasBoost = False
 		
@@ -584,7 +609,7 @@ class MyApp(ShowBase):
 	def boyMoveTask(self, task):
 		if self.curState == STATE_STARTED:
 			self.health()
-			if not self.hasBoost:
+			if not self.hasBoost or self.hasGhostPower:
 				if self.keyMap["forward"] != 0:
 					self.boy.setY(self.boy, -35 * globalClock.getDt())
 					self.isMoving = True
@@ -594,7 +619,7 @@ class MyApp(ShowBase):
 				if self.keyMap["right"] != 0:
 					self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
 					self.isMoving = True
-			else:
+			elif self.hasBoost and not self.hasGhostPower:
 				if self.keyMap["forward"] != 0:
 					self.boy.setY(self.boy, -70 * globalClock.getDt())
 					self.isMoving = True
@@ -603,6 +628,16 @@ class MyApp(ShowBase):
 					self.isMoving = True
 				if self.keyMap["right"] != 0:
 					self.boy.setH(self.boy.getH() - 600 * globalClock.getDt())
+					self.isMoving = True
+			else:
+				if self.keyMap["forward"] != 0:
+					self.boy.setY(self.boy, -35 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["left"] != 0:
+					self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["right"] != 0:
+					self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
 					self.isMoving = True
 			if not (self.keyMap["forward"] or self.keyMap["left"] or self.keyMap["right"]):
 				self.isMoving = False
@@ -805,8 +840,12 @@ class MyApp(ShowBase):
 		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
 		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
 		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
-		self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
-		self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
+		self.cBottle = self.elixir.attachNewNode(CollisionNode('cBottleNode'))
+		self.cBottle.node().addSolid(CollisionSphere(0, 0, 0, 1))
+		self.cCandle = self.candle.attachNewNode(CollisionNode('cCandleNode'))
+		self.cCandle.node().addSolid(CollisionSphere(0, 0, 0, 50))
+		#self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
+		#self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
 		#self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
 		#self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
 		#self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
@@ -880,6 +919,8 @@ class MyApp(ShowBase):
 		#self.cTent.show()
 		#self.cSkyride1.show()
 		#self.cSkyride2.show()
+		#self.cBottle.show()
+		#self.cCandle.show()
 		
 		self.cTrav=CollisionTraverser()
 		self.collisionHandler1 = CollisionHandlerQueue()
@@ -1309,7 +1350,12 @@ class MyApp(ShowBase):
 		self.elixir.reparentTo(self.render)
 		self.elixir.setScale(10)
 		self.elixir.setPos(self.bridge.getPos())
-		
+
+		self.candle = self.loader.loadModel("models/candle")
+		self.candle.reparentTo(self.render)
+		self.candle.setScale(0.1,0.1,0.05)
+		self.candle.setPos(-280, 270 , 1)
+
 		self.boy = Actor("models/ralph",{"walk":"models/ralph-walk","run":"models/ralph-run"})
 		self.boy.reparentTo(self.render)
 		self.boy.setPos(5, -210, 0)
@@ -1368,7 +1414,7 @@ class MyApp(ShowBase):
 		self.hideGameOverMenu()
 		
 		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
-		self.powerBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
+		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
 		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
 		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
 		self.setGameElementVisiblity(False)
@@ -1459,10 +1505,11 @@ class MyApp(ShowBase):
 			self.boostCount = 100
 			self.curScore = 0
 			self.noOfLives = 2
-			self.ghostMode = False
+			self.hasGhostPower = False
 			self.countMonster = 300
 			self.boyHealth = 100
 			self.healthBar['value'] = 100
+			self.countLabel['text'] = str(0)
 			self.hideGameOverMenu()
 			self.transit.letterboxOff(2.5)
 			self.setGameElementVisiblity(True)
@@ -1486,14 +1533,16 @@ class MyApp(ShowBase):
 			self.boostCount = 100
 			self.curScore = 0
 			self.noOfLives = 2
-			self.ghostMode = False
+			self.hasGhostPower = False
 			self.showMainMenu()
 			self.hideGameOverMenu()
 			self.healthBar['value'] = 100
+			self.countLabel['text'] = str(0)
 			self.countMonster = 300
 			self.boyHealth = 100
 			self.setGameElementVisiblity(True)
-		
-		self.curState = nextState		
+			self.startBut['text'] = START_BUT_TEXT
+			
+		self.curState = nextState	
 app = MyApp()
 app.run()
