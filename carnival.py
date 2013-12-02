@@ -40,7 +40,7 @@ EXIT_TEXT = "Are you sure you would like to exit the game? All your progress wou
 
 ########################HEALTH/POWER VALUE CHANGES
 INCR_HEALTH = 0.05
-DECR_HEALTH = 0.05
+DECR_HEALTH = 0.1
 DECR_POWER = 0.1
  
 ########################GAME STATES
@@ -63,9 +63,9 @@ class MyApp(ShowBase):
 		ShowBase.__init__(self)
 		
 		#Set background Image
-		imageObject = OnscreenImage(parent = render2dp, image = 'image/nature.jpg', pos = (0, 0, 0), scale = 1)
-		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		base.cam2dp.node().getDisplayRegion(0).setSort(-20)
+		#imageObject = OnscreenImage(parent = render2dp, image = 'image/nature.jpg', pos = (0, 0, 0), scale = 1)
+		#imageObject.setTransparency(TransparencyAttrib.MAlpha)
+		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#To show 2D text on Screen
 		#textObject = OnscreenText(text = 'Carnival & Ralph!', pos = (0.1, 0.9), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
 		#textObject = OnscreenText(text = '[Esc] To EXIT', pos = (-1, 0.9), scale = 0.06)
@@ -106,11 +106,11 @@ class MyApp(ShowBase):
 		#These instance field shows health of character
 		self.boyHealth = 100
 		
-		#self.loader.loadMusic('music/musicbox.ogg')
-		self.song = self.loader.loadSfx("audio/horror.ogg")
+		self.themeSong = self.loader.loadMusic('audio/game.wav')
+		self.hauntedHouseSong = self.loader.loadSfx("audio/horror.ogg")
 		self.butHoverSound = self.loader.loadSfx("audio/but_hover.wav")
 		#self.butClickSound = self.loader.loadSfx("audio/but_hover.wav")
-		self.song.setVolume(0.5)
+		self.themeSong.setVolume(1)
 		
 		#Load all the Models and Actors
 		self.loadAllModels()
@@ -168,7 +168,6 @@ class MyApp(ShowBase):
 		self.sLight = self.render.attachNewNode(self.sunLight)
 		self.sLight.setPos(350,300,150)
 		
-		
 		#self.directionalLight = DirectionalLight("directionalLight")
 		#self.directionalLight.setDirection(Vec3(-5, -5, -5))
 		#self.directionalLight.setColor(Vec4(1, 1, 1, 1))
@@ -179,9 +178,8 @@ class MyApp(ShowBase):
 		self.hutLight.setPos(0,0,120)
 		
 		#Turn on the light effects and set world view for background of GUI
-		self.switchView()
+		#self.switchView()
 		self.changeLights()
-		#self.resetState()
 		
 	def animatethings(self):
 		
@@ -405,12 +403,15 @@ class MyApp(ShowBase):
 				self.nearCoaster = True
 		else:
 				self.nearCoaster = False
-		#print coasterDist
 		
 		if base.mouseWatcherNode.hasMouse() and self.curState == STATE_STARTED:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
 			#self.camera.setX(base.camera, -20 * globalClock.getDt())
+		if self.enableAudio:
+			if not self.themeSong.status() == self.themeSong.PLAYING:
+				self.sfxManagerList[0].update()
+				self.themeSong.play()
 		#if self.song.status() == AudioSound.BAD:
 		#	print "BAD"
 		#elif self.song.status() == AudioSound.READY:
@@ -436,13 +437,13 @@ class MyApp(ShowBase):
 			if not self.skyRideSeq.isPlaying():
 				self.skyRideSeq.resume()
 		if self.nearHouse:
-			if not self.song.status() == AudioSound.PLAYING:
+			if not self.hauntedHouseSong.status() == AudioSound.PLAYING:
 				if self.enableAudio:
-					self.song.play()
+					self.hauntedHouseSong.play()
 			self.sfxManagerList[0].update()
 		else:
-			if self.song.status() == self.song.PLAYING:
-				self.song.stop()
+			if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
+				self.hauntedHouseSong.stop()
 		# if self.nearCoaster:
 			# #Do something
 			# return
@@ -461,10 +462,11 @@ class MyApp(ShowBase):
 			# self.nearBridge = False
 			# #self.pose = False
 			self.nearLollipop = False
+			self.nearMint = False
 		else:
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
-				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
+				entry = self.collisionHandler1.getEntry(i)
 				#print entry
 				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearCarousel = True
@@ -477,21 +479,32 @@ class MyApp(ShowBase):
 				# elif "cHouseNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearHouse = True
 					
-				if "Lollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					print self.collisionHandler1.getEntry(i).getIntoNodePath(), self.collisionHandler1.getEntry(i).getInto()
+				x = random.randint(-350,350)
+				y = random.randint(-350,350)
+				if "cLollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].hide()
+					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].setPos(x,y,0)
+					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].show()
 					self.curScore += 1
-					self.boyHealth = (self.boyHealth + 20)
+					self.boyHealth = (self.boyHealth + 5)
 					if self.boyHealth > 100:
 						self.boyHealth = 100
 						self.healthBar['value'] = 100
 					else:
-						self.healthBar['value'] += 20 
+						self.healthBar['value'] += 5 
 					self.nearLollipop = True
+				if "cMint" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.mint[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].hide()
+					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].setPos(x,y,0)
+					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].show()
+					self.boyHealth = 100
+					self.healthBar['value'] = 100
+					self.nearMint = True
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 3)
 					self.nearBridge = True
 					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
-			if not (self.nearBridge or self.nearLollipop):
+			if not (self.nearBridge or self.nearLollipop or self.nearMint):
 				self.boy.setPos(self.startPos)
 		return Task.cont
 		
@@ -620,6 +633,7 @@ class MyApp(ShowBase):
 		self.nearHouse = False
 		self.nearCoaster = False
 		self.nearLollipop = False
+		self.nearMint = False
 		self.lights = False
 		self.pose = False
 		self.nearBridge = False
@@ -787,6 +801,10 @@ class MyApp(ShowBase):
 	def toggleAudio(self,status):
 		if not status:
 			self.enableAudio = False
+			if self.themeSong.status() == self.themeSong.PLAYING:
+				self.themeSong.stop()
+			if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
+				self.hauntedHouseSong.stop()
 		else:
 			self.enableAudio = True
 			
@@ -830,6 +848,21 @@ class MyApp(ShowBase):
 		self.cFence2.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
 		self.cFence3 = self.fence3.attachNewNode(CollisionNode('cFence3'))
 		self.cFence3.node().addSolid(CollisionPlane(Plane(Vec3(0, -1, 0), Point3(0, 0, 0))))
+		
+		lollipopCollisionNodes = []
+		for i in xrange(15):
+			collisionNode = self.lollipop[i].attachNewNode(CollisionNode('cLollipop'))
+			collisionNode.node().addSolid(CollisionSphere(0, 0, 0, 0.5))
+			collisionNode.setTag('key', str(i))
+			lollipopCollisionNodes.append(collisionNode)
+			
+		mintCollisionNodes = []
+		for i in xrange(10):
+			collisionNode = self.mint[i].attachNewNode(CollisionNode('cMint'))
+			collisionNode.node().addSolid(CollisionSphere(0, 0, 0, 0.5))
+			collisionNode.setTag('key', str(i))
+			mintCollisionNodes.append(collisionNode)
+		
 		#Uncomment this lines to see the collision spheres
 		#self.cStall.show()
 		#self.cHouse.show()
@@ -863,7 +896,12 @@ class MyApp(ShowBase):
 	  
 		#FadeIn the First Time when app starts
 		self.transit = Transitions(loader)
-		#self.transit.irisIn(2.5)
+		self.transit.irisIn(2.5)
+		taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+		props = WindowProperties()
+		props.setCursorHidden(False) 
+		base.win.requestProperties(props)
+		self.transit.letterboxOn(2.5)
 		
 		#All the actors, models are loaded here 
 		self.pGround = self.loader.loadModel("models/ParkGround")
@@ -948,8 +986,8 @@ class MyApp(ShowBase):
 
 		self.house = self.loader.loadModel("models/HauntedHouse")
 		self.house.reparentTo(self.render)
-		self.house.setScale(0.6,0.6,1.6)
-		self.house.setPos(100,260,1)
+		self.house.setScale(0.8, 0.6, 1.6)
+		self.house.setPos(60,260,1)
 		self.house.setHpr(180,0,0)
 		
 		self.stall = self.loader.loadModel("models/popcorncart")
@@ -1246,7 +1284,7 @@ class MyApp(ShowBase):
 		seq.loop()
 		
 		self.lollipop = []
-		for i in xrange(50):
+		for i in xrange(15):
 			lollipop = self.loader.loadModel("models/lollipop")
 			lollipop.reparentTo(self.render)
 			lollipop.setScale(15)
@@ -1256,16 +1294,16 @@ class MyApp(ShowBase):
 			self.lollipop.append(lollipop)
 		
 		self.mint = []
-		for i in xrange(50):
-			mint = self.loader.loadModel("models/mint")
+		for i in xrange(10):
+			mint = self.loader.loadModel("models/Capsule")
 			mint.reparentTo(self.render)
-			mint.setScale(15)
+			mint.setScale(0.5)
 			x = random.randint(-300,300)
 			y = random.randint(-300,300)
 			mint.setPos(x, y, 5)
 			self.mint.append(mint)
-			mint.setR(90)
-			mint.setH(90)
+			#mint.setR(90)
+			#mint.setH(90)
 
 		# self.lollipop = self.loader.loadModel("models/lollipop")
 		# self.lollipop.reparentTo(self.render)
@@ -1521,6 +1559,7 @@ class MyApp(ShowBase):
 			self.nearHouse = False
 			self.nearCoaster = False
 			self.nearLollipop = False
+			self.nearMint = False
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False
@@ -1545,6 +1584,7 @@ class MyApp(ShowBase):
 			self.nearHouse = False
 			self.nearCoaster = False
 			self.nearLollipop = False
+			self.nearMint = False
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False
