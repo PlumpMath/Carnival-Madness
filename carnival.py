@@ -20,6 +20,8 @@ from direct.showbase.RandomNumGen import *
 from direct.showbase.DirectObject import DirectObject
 from direct.actor.Actor import Actor
 from panda3d.ai import *
+from panda3d.core import TransparencyAttrib
+from direct.gui.OnscreenImage import OnscreenImage
  
 START_BUT_TEXT = "PLAY"
 EXIT_BUT_TEXT = "EXIT"
@@ -35,6 +37,11 @@ LIGHT_BUT_TEXT = "Lights"
 LIGHTS_LABEL = "Toggle Lights"
 BACK_BUT_TEXT = "<--- BACK"
 EXIT_TEXT = "Are you sure you would like to exit the game? All your progress would be lost?"
+
+########################HEALTH/POWER VALUE CHANGES
+INCR_HEALTH = 0.05
+DECR_HEALTH = 0.05
+DECR_POWER = 0.1
  
 ########################GAME STATES
 STATE_RESET = 1
@@ -91,7 +98,7 @@ class MyApp(ShowBase):
 		self.hasStarted = False
 		self.hasResumed = False
 		self.hasBoost = False
-		self.boostCount = 1000
+		self.boostCount = 100
 		self.curScore = 0
 		self.ghostMode = False
 		self.curState = STATE_RESET
@@ -473,9 +480,12 @@ class MyApp(ShowBase):
 				if "Lollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					print self.collisionHandler1.getEntry(i).getIntoNodePath(), self.collisionHandler1.getEntry(i).getInto()
 					self.curScore += 1
-					self.boyHealth = (self.boyHealth + 2)
+					self.boyHealth = (self.boyHealth + 20)
 					if self.boyHealth > 100:
 						self.boyHealth = 100
+						self.healthBar['value'] = 100
+					else:
+						self.healthBar['value'] += 20 
 					self.nearLollipop = True
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 3)
@@ -489,22 +499,32 @@ class MyApp(ShowBase):
 	def health(self):
 		if self.isMoving:
 			# self.countMonster=self.countMonster+1
-			self.boyHealth = self.boyHealth - 0.5
-			self.bar['value'] += self.boyHealth
+			self.boyHealth = self.boyHealth - DECR_HEALTH
+			self.healthBar['value'] -= DECR_HEALTH
 			if self.boostCount > 0: 
-				self.boostCount = self.boostCount - 1
+				self.boostCount = self.boostCount - DECR_POWER
+				self.powerBar['value'] -= DECR_POWER
+			if self.boostCount < 0 or self.boostCount == 0:
+				 self.boostCount = 0
+				 self.powerBar['value'] = 0
+				 self.hasBoost = False
 			#print "self.boostCount = "+str(self.boostCount)
-			print "self.boyHealth = "+str(self.boyHealth)
+			#print "self.boyHealth = "+str(self.boyHealth)
 			
 		else:
 			#self.countMonster=self.countMonster-0.5
 			if self.boyHealth < 100:
-				self.boyHealth = self.boyHealth + 0.5
-				self.bar['value'] += self.boyHealth
+				self.boyHealth = self.boyHealth + INCR_HEALTH
+				self.healthBar['value'] += INCR_HEALTH
 			if self.boostCount > 0: 
-				self.boostCount = self.boostCount - 1
-			#print "self.boostCount = "+str(self.boostCount)
-			print "self.boyHealth = "+str(self.boyHealth)
+				self.boostCount = self.boostCount - DECR_POWER
+				self.powerBar['value'] -= DECR_POWER
+			if self.boostCount < 0 or self.boostCount == 0:
+				 self.boostCount = 0
+				 self.powerBar['value'] = 0
+				 self.hasBoost = False
+				 #print "self.boostCount = "+str(self.boostCount)
+			#print "self.boyHealth = "+str(self.boyHealth)
 			
 		if self.boostCount == 0:
 			self.hasBoost = False
@@ -609,7 +629,7 @@ class MyApp(ShowBase):
 		self.hasStarted = False
 		self.hasResumed = False
 		self.hasBoost = False
-		self.boostCount = 1000
+		self.boostCount = 100
 		self.curScore = 0
 		self.ghostMode = False
 		
@@ -841,11 +861,10 @@ class MyApp(ShowBase):
 	
 	def loadAllModels(self):
 	  
-		self.bar = DirectWaitBar(text = "", value = 100, pos = (0.9,0.4,0.8),scale = 0.3)
 		#FadeIn the First Time when app starts
 		self.transit = Transitions(loader)
 		#self.transit.irisIn(2.5)
-			
+		
 		#All the actors, models are loaded here 
 		self.pGround = self.loader.loadModel("models/ParkGround")
 		self.pGround.reparentTo(self.render)
@@ -1421,16 +1440,32 @@ class MyApp(ShowBase):
 			
 		self.hidePrefs()
 		self.hideGameOverMenu()
-				
+		
+		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (0.9,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
+		self.powerBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (0.9,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
+		#self.heartImage = OnscreenImage(image = "models/heart.jpeg", pos = (-0.5, 0, 0.02), scale = 0.4, color = (1, 1, 1, 0.6))
+		#sself.myImage.setTransparency(TransparencyAttrib.MAlpha)
+		self.setGameElementVisiblity(False)
+		
+	def setGameElementVisiblity(self,args):
+		if args:
+			self.powerBar.show()
+			self.healthBar.show()
+			
+		else:
+			self.healthBar.hide()
+			self.powerBar.hide()
+		
 	def switchState(self, curState, nextState):
 		if curState == STATE_RESET and nextState == STATE_STARTED:
 			self.hideMainMenu()
 			taskMgr.remove("SpinCameraTask")
 			props = WindowProperties()
-			props.setCursorHidden(True) 
+			props.setCursorHidden(True)
 			base.win.requestProperties(props)
 			self.ambientLight.setColor(Vec4(.3, .3, .3, 1))
 			self.transit.letterboxOff(2.5)
+			self.setGameElementVisiblity(True)
 		elif curState == STATE_RESET and nextState == STATE_PREFS: 
 			self.hideMainMenu()
 			self.showPrefs()
@@ -1458,7 +1493,8 @@ class MyApp(ShowBase):
 			props = WindowProperties()
 			props.setCursorHidden(False) 
 			base.win.requestProperties(props)
-		
+			self.setGameElementVisiblity(False)
+			
 		#All these will be when current state are Paused
 		elif curState == STATE_PAUSED and nextState == STATE_STARTED:
 			self.transit.letterboxOff(2.5)
@@ -1488,12 +1524,15 @@ class MyApp(ShowBase):
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False
-			self.boostCount = 1000
+			self.boostCount = 100
 			self.curScore = 0
 			self.ghostMode = False
 			self.countMonster = 300
 			self.boyHealth = 100
+			self.healthBar['value'] = 100
 			self.hideGameOverMenu()
+			self.transit.letterboxOff(2.5)
+			self.setGameElementVisiblity(True)
 		elif curState == STATE_GAME_OVER and nextState == STATE_RESET:
 			self.boy.setPos(5, -210, 0)
 			self.monster.setPos(0,-325, 5)
@@ -1509,15 +1548,15 @@ class MyApp(ShowBase):
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False
-			self.boostCount = 1000
+			self.boostCount = 100
 			self.curScore = 0
 			self.ghostMode = False
 			self.showMainMenu()
 			self.hideGameOverMenu()
-			
+			self.healthBar['value'] = 100
 			self.countMonster = 300
 			self.boyHealth = 100
-			
+			self.setGameElementVisiblity(True)
 		
 		self.curState = nextState		
 app = MyApp()
