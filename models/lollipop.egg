@@ -6,7 +6,6 @@
 }
 
 <Group> Lollipop {
-<Collide> cPop {Sphere descend keep}
 	<Transform> {
 		<Matrix4> { 
 			3.2808398950131235 0.0 0.0 0.0 

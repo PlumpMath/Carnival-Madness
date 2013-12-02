@@ -1,6 +1,6 @@
 <CoordinateSystem> { y-up-left }
 
-<Texture> TextureMap { "maps\mint.png"
+<Texture> TextureMap { "maps/mint.png"
 	<Scalar> format { rgb }
 	<Scalar> wrap { repeat }
 }
