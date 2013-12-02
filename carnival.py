@@ -98,6 +98,8 @@ class MyApp(ShowBase):
 		self.nearHouse = False
 		self.nearCoaster = False
 		self.nearLollipop = False
+		self.nearMint = False
+		self.nearMonster = False
 		self.lights = False
 		self.pose = False
 		self.nearBridge = False
@@ -473,10 +475,11 @@ class MyApp(ShowBase):
 			self.nearBridge = False
 			self.nearLollipop = False
 			self.nearMint = False
+			self.nearMonster = False
 		else:
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
-				entry = self.collisionHandler1.getEntry(i)
+				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
 				#print entry
 				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearCarousel = True
@@ -515,8 +518,11 @@ class MyApp(ShowBase):
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 2.5)
 					self.nearBridge = True
-					#print self.collisionHandler1.getEntry(i).getSurfacePoint(self.bridge)
-			if not (self.nearBridge or self.nearLollipop or self.nearMint):
+				if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.nearMonster = True
+					self.boyHealth -= 2
+					self.healthBar['value'] = self.boyHealth
+			if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
 				self.boy.setPos(self.startPos)
 		return Task.cont
 		
@@ -799,6 +805,8 @@ class MyApp(ShowBase):
 		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
 		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
 		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
+		self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
+		self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
 		#self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
 		#self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
 		#self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
@@ -824,6 +832,10 @@ class MyApp(ShowBase):
 		self.cPond.node().addSolid(CollisionSphere(-100, 0, 0, 40))
 		self.cPond1 = self.pGround.attachNewNode(CollisionNode('cPond1'))
 		self.cPond1.node().addSolid(CollisionSphere(-220, -170, 0, 120))
+		self.cPond2 = self.pGround.attachNewNode(CollisionNode('cPond2'))
+		self.cPond2.node().addSolid(CollisionSphere(-15, -10, 0, 50))
+		self.cPond3 = self.pGround.attachNewNode(CollisionNode('cPond3'))
+		self.cPond3.node().addSolid(CollisionSphere(-15, 80, 0, 50))
 		
 		self.cFence = self.fence.attachNewNode(CollisionNode('cFence'))
 		self.cFence.node().addSolid(CollisionPlane(Plane(Vec3(0, 1, 0), Point3(0, 0, 0))))
@@ -853,10 +865,13 @@ class MyApp(ShowBase):
 		#self.cHouse.show()
 		#self.cCarousel.show()
 		#self.cBoy.show()
+		#self.cMonster.show()
 		#self.cOctopus.show()
 		#self.cCoaster.show()
-		self.cPond.show()
-		self.cPond1.show()
+		#self.cPond.show()
+		#self.cPond1.show()
+		#self.cPond2.show()
+		#self.cPond3.show()
 		#self.cFence.show()
 		#self.cFence1.show()
 		#self.cFence2.show()
@@ -1354,17 +1369,21 @@ class MyApp(ShowBase):
 		
 		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
 		self.powerBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
+		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
+		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
 		self.setGameElementVisiblity(False)
 		
 	def setGameElementVisiblity(self,args):
 		if args:
 			self.powerBar.show()
 			self.healthBar.show()
-			self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
-			self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
+			self.countLabel.show()
+			self.lifeLabel.show()
 		else:
 			self.healthBar.hide()
 			self.powerBar.hide()
+			self.countLabel.hide()
+			self.lifeLabel.hide()
 		
 	def switchState(self, curState, nextState):
 		if curState == STATE_RESET and nextState == STATE_STARTED:
@@ -1433,6 +1452,7 @@ class MyApp(ShowBase):
 			self.nearCoaster = False
 			self.nearLollipop = False
 			self.nearMint = False
+			self.nearMonster = False
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False
@@ -1459,6 +1479,7 @@ class MyApp(ShowBase):
 			self.nearCoaster = False
 			self.nearLollipop = False
 			self.nearMint = False
+			self.nearMonster = False
 			self.pose = False
 			self.nearBridge = False
 			self.hasBoost = False

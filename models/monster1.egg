@@ -16,6 +16,7 @@
   <Group> groundPlane_transform {
   }
   <Group> WholeMonster {
+    <Collide> cMonster {Sphere descend keep}
     <Group> EyeBall {
       <VertexPool> EyeBallShape.verts {
         <Vertex> 1 {
