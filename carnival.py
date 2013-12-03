@@ -63,16 +63,16 @@ class MyApp(ShowBase):
 		ShowBase.__init__(self)
 		
 		#Set background Image
-		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.jpg', pos = (0.51, 0, 0.8), scale = (0.03, 0.05, 0.05))
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.png', pos = (0.51, 0, 0.8), scale = (0.05, 0.07, 0.07))
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		imageObject = OnscreenImage(parent = render2dp, image = 'models/speed.jpg', pos = (0.51, 0, 0.7), scale = (0.03, 0.05, 0.05))
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/speed.png', pos = (0.51, 0, 0.6), scale = (0.05, 0.07, 0.09))
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.jpg', pos = (-0.3, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.png', pos = (-0.3, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = ' X', pos = (-1.6, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
-		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.jpg', pos = (-0.9, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		OnscreenText(text = 'X', pos = (-1.45, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.png', pos = (-0.9, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject2.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = ' X', pos = (-0.45, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		OnscreenText(text = 'X', pos = (-0.35, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
 		
 		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#To show 2D text on Screen
@@ -437,39 +437,40 @@ class MyApp(ShowBase):
 		#else:
 		#	print "PLAYING"
 		
-		if self.nearCarousel:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.carousel.setHpr(angleDegrees, 0, 0)
-		if self.nearOctopus:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.octopus.setHpr(angleDegrees, 0, 0)
-		if self.nearTent:
-			self.tent.setLight(self.hutLight)
-		else:
-			self.tent.clearLight(self.hutLight)
-		if self.nearSkyride:
-			self.skyRideSeq.pause()
-		else:
-			if not self.skyRideSeq.isPlaying():
-				self.skyRideSeq.resume()
-		if self.nearHouse:
-			if not self.hauntedHouseSong.status() == AudioSound.PLAYING:
-				if self.enableAudio:
-					self.hauntedHouseSong.play()
-			self.sfxManagerList[0].update()
-		else:
-			if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
-				self.hauntedHouseSong.stop()
+		if self.curState == STATE_STARTED:
+			if self.nearCarousel:
+				angleDegrees = task.time * 12.0
+				angleRadians = angleDegrees * (pi / 180.0)
+				self.carousel.setHpr(angleDegrees, 0, 0)
+			if self.nearOctopus:
+				angleDegrees = task.time * 12.0
+				angleRadians = angleDegrees * (pi / 180.0)
+				self.octopus.setHpr(angleDegrees, 0, 0)
+			if self.nearTent:
+				self.tent.setLight(self.hutLight)
+			else:
+				self.tent.clearLight(self.hutLight)
+			if self.nearSkyride:
+				self.skyRideSeq.pause()
+			else:
+				if not self.skyRideSeq.isPlaying():
+					self.skyRideSeq.resume()
+			if self.nearHouse:
+				if not self.hauntedHouseSong.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.hauntedHouseSong.play()
+					self.sfxManagerList[0].update()
+			else:
+				if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
+					self.hauntedHouseSong.stop()
 		# if self.nearCoaster:
 			# #Do something
 			# return
-		if not self.nearBridge:
-			self.boy.setZ(0)
-		if self.nearMonster:
-			self.boyHealth -= 2
-			self.healthBar['value'] = self.boyHealth
+			if not self.nearBridge:
+				self.boy.setZ(0)
+			if self.nearMonster:
+				self.boyHealth -= 2
+				self.healthBar['value'] = self.boyHealth
 			
 		self.cTrav.traverse(render)
 		self.collisionHandler1.sortEntries()
@@ -621,13 +622,13 @@ class MyApp(ShowBase):
 					self.isMoving = True
 			elif self.hasBoost and not self.hasGhostPower:
 				if self.keyMap["forward"] != 0:
-					self.boy.setY(self.boy, -70 * globalClock.getDt())
+					self.boy.setY(self.boy, -65 * globalClock.getDt())
 					self.isMoving = True
 				if self.keyMap["left"] != 0:
-					self.boy.setH(self.boy.getH() + 600 * globalClock.getDt())
+					self.boy.setH(self.boy.getH() + 525 * globalClock.getDt())
 					self.isMoving = True
 				if self.keyMap["right"] != 0:
-					self.boy.setH(self.boy.getH() - 600 * globalClock.getDt())
+					self.boy.setH(self.boy.getH() - 525 * globalClock.getDt())
 					self.isMoving = True
 			else:
 				if self.keyMap["forward"] != 0:
@@ -1389,11 +1390,11 @@ class MyApp(ShowBase):
 		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
 		
 		#Set up the preferences GUI menu and then hide it
-		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.6))
-		self.fullScreenBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = FULLSCREEN_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.6), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleScreen)
+		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
+		self.fullScreenBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = FULLSCREEN_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleScreen)
 		
 		self.labelSound = DirectLabel(text = SOUND_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.4))
-		self.audioBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = AUDIO_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleAudio)
+		self.audioBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = AUDIO_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 1, command = self.toggleAudio)
 		
 		#self.resolutionSlider = DirectSlider(range = (0,100), value = 100, pageSize = 25, pos = (0.7, 0, 0), scale = 0.5, command = self.setResolution)
 		#self.labelResolution = DirectLabel(text = RESOLUTION_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
@@ -1413,10 +1414,10 @@ class MyApp(ShowBase):
 		self.hidePrefs()
 		self.hideGameOverMenu()
 		
-		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
-		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
-		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
-		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
+		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.35,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.4)
+		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.35,0.4,0.6), barColor = (0, 1 , 0, 1), scale = 0.4)
+		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.25 , 0, 0.75))
+		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.2 , 0, 0.75))
 		self.setGameElementVisiblity(False)
 		
 	def setGameElementVisiblity(self,args):
@@ -1510,6 +1511,7 @@ class MyApp(ShowBase):
 			self.boyHealth = 100
 			self.healthBar['value'] = 100
 			self.countLabel['text'] = str(0)
+			self.lifeLabel['text'] = str(2)
 			self.hideGameOverMenu()
 			self.transit.letterboxOff(2.5)
 			self.setGameElementVisiblity(True)
@@ -1538,6 +1540,7 @@ class MyApp(ShowBase):
 			self.hideGameOverMenu()
 			self.healthBar['value'] = 100
 			self.countLabel['text'] = str(0)
+			self.lifeLabel['text'] = str(2)
 			self.countMonster = 300
 			self.boyHealth = 100
 			self.setGameElementVisiblity(True)
