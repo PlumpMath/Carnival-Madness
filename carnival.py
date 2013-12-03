@@ -63,16 +63,16 @@ class MyApp(ShowBase):
 		ShowBase.__init__(self)
 		
 		#Set background Image
-		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.jpg', pos = (0.51, 0, 0.8), scale = (0.03, 0.05, 0.05))
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.png', pos = (0.51, 0, 0.8), scale = (0.05, 0.07, 0.07))
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		imageObject = OnscreenImage(parent = render2dp, image = 'models/speed.jpg', pos = (0.51, 0, 0.7), scale = (0.03, 0.05, 0.05))
+		imageObject = OnscreenImage(parent = render2dp, image = 'models/speed.png', pos = (0.51, 0, 0.6), scale = (0.05, 0.07, 0.09))
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
-		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.jpg', pos = (-0.3, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.png', pos = (-0.3, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = ' X', pos = (-1.6, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
-		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.jpg', pos = (-0.9, 0, 0.8), scale = (0.05, 0.09, 0.09))
+		OnscreenText(text = 'X', pos = (-1.45, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.png', pos = (-0.9, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject2.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = ' X', pos = (-0.45, 0.81), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		OnscreenText(text = 'X', pos = (-0.35, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
 		
 		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#To show 2D text on Screen
@@ -109,7 +109,7 @@ class MyApp(ShowBase):
 		self.hasStarted = False
 		self.hasResumed = False
 		self.hasBoost = False
-		self.ghostMode = False
+		self.hasGhostPower = False
 		self.curState = STATE_RESET
 	
 		#These instance field shows health of character
@@ -415,10 +415,16 @@ class MyApp(ShowBase):
 				self.nearCoaster = True
 		else:
 				self.nearCoaster = False
+		monsterDist = (self.boy.getPos() - self.monster.getPos()).length()
+		if monsterDist < 17:
+				self.nearMonster = True
+		else:
+				self.nearMonster = False
 		
 		if base.mouseWatcherNode.hasMouse() and self.curState == STATE_STARTED:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
+			base.camera.lookAt(self.boy)
 			#self.camera.setX(base.camera, -20 * globalClock.getDt())
 		if self.enableAudio:
 			if not self.themeSong.status() == self.themeSong.PLAYING:
@@ -431,36 +437,40 @@ class MyApp(ShowBase):
 		#else:
 		#	print "PLAYING"
 		
-		if self.nearCarousel:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.carousel.setHpr(angleDegrees, 0, 0)
-		if self.nearOctopus:
-			angleDegrees = task.time * 12.0
-			angleRadians = angleDegrees * (pi / 180.0)
-			self.octopus.setHpr(angleDegrees, 0, 0)
-		if self.nearTent:
-			self.tent.setLight(self.hutLight)
-		else:
-			self.tent.clearLight(self.hutLight)
-		if self.nearSkyride:
-			self.skyRideSeq.pause()
-		else:
-			if not self.skyRideSeq.isPlaying():
-				self.skyRideSeq.resume()
-		if self.nearHouse:
-			if not self.hauntedHouseSong.status() == AudioSound.PLAYING:
-				if self.enableAudio:
-					self.hauntedHouseSong.play()
-			self.sfxManagerList[0].update()
-		else:
-			if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
-				self.hauntedHouseSong.stop()
+		if self.curState == STATE_STARTED:
+			if self.nearCarousel:
+				angleDegrees = task.time * 12.0
+				angleRadians = angleDegrees * (pi / 180.0)
+				self.carousel.setHpr(angleDegrees, 0, 0)
+			if self.nearOctopus:
+				angleDegrees = task.time * 12.0
+				angleRadians = angleDegrees * (pi / 180.0)
+				self.octopus.setHpr(angleDegrees, 0, 0)
+			if self.nearTent:
+				self.tent.setLight(self.hutLight)
+			else:
+				self.tent.clearLight(self.hutLight)
+			if self.nearSkyride:
+				self.skyRideSeq.pause()
+			else:
+				if not self.skyRideSeq.isPlaying():
+					self.skyRideSeq.resume()
+			if self.nearHouse:
+				if not self.hauntedHouseSong.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.hauntedHouseSong.play()
+					self.sfxManagerList[0].update()
+			else:
+				if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
+					self.hauntedHouseSong.stop()
 		# if self.nearCoaster:
 			# #Do something
 			# return
-		if not self.nearBridge:
-			self.boy.setZ(0)
+			if not self.nearBridge:
+				self.boy.setZ(0)
+			if self.nearMonster:
+				self.boyHealth -= 2
+				self.healthBar['value'] = self.boyHealth
 			
 		self.cTrav.traverse(render)
 		self.collisionHandler1.sortEntries()
@@ -476,11 +486,11 @@ class MyApp(ShowBase):
 			self.nearLollipop = False
 			self.nearMint = False
 			self.nearMonster = False
+			self.nearElixir = False
 		else:
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
 				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
-				#print entry
 				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearCarousel = True
 				# elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
@@ -494,6 +504,7 @@ class MyApp(ShowBase):
 					
 				x = random.randint(-350,350)
 				y = random.randint(-350,350)
+				z = random.randint(0,1)
 				if "cLollipop" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].hide()
 					self.lollipop[int(self.collisionHandler1.getEntry(i).getIntoNodePath().getTag('key'))].setPos(x,y,0)
@@ -518,12 +529,26 @@ class MyApp(ShowBase):
 				if "bridge" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 2.5)
 					self.nearBridge = True
-				if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-					self.nearMonster = True
-					self.boyHealth -= 0############____________############___________###############________###########__________#########___________########
-					self.healthBar['value'] = self.boyHealth
-			if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
-				self.boy.setPos(self.startPos)
+
+				#if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+				#	self.nearMonster = True
+				#	self.boyHealth -= 2
+				#	self.boyHealth -= 2;self.healthBar['value'] 	= self.boyHealth
+				if "cBottleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.boostCount = 100
+					self.powerBar['value'] = 100
+					self.hasBoost = True
+					self.cBoy.hide()
+					self.hasGhostPower = False
+				if "cCandleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					self.powerBar['value'] = 100
+					self.cBoy.show()
+					self.hasGhostPower = True
+					self.hasBoost = False
+			
+			if not self.hasGhostPower:
+				if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
+					self.boy.setPos(self.startPos)
 		return Task.cont
 		
 ###This method is used to change the health of actor which gets tired by running.
@@ -536,14 +561,14 @@ class MyApp(ShowBase):
 				self.boostCount = self.boostCount - DECR_POWER
 				self.powerBar['value'] -= DECR_POWER
 			if self.boostCount < 0 or self.boostCount == 0:
-				 self.boostCount = 0
-				 self.powerBar['value'] = 0
-				 self.hasBoost = False
-			#print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
-			
+				self.boostCount = 0
+				self.powerBar['value'] = 0
+				if self.hasGhostPower:
+					self.hasGhostPower = False
+					self.cBoy.hide()
+				if self.hasBoost:
+					self.hasBoost = False
 		else:
-			#self.countMonster=self.countMonster-0.5
 			if self.boyHealth < 100:
 				self.boyHealth = self.boyHealth + INCR_HEALTH
 				self.healthBar['value'] += INCR_HEALTH
@@ -551,12 +576,14 @@ class MyApp(ShowBase):
 				self.boostCount = self.boostCount - DECR_POWER
 				self.powerBar['value'] -= DECR_POWER
 			if self.boostCount < 0 or self.boostCount == 0:
-				 self.boostCount = 0
-				 self.powerBar['value'] = 0
-				 self.hasBoost = False
-				 #print "self.boostCount = "+str(self.boostCount)
-			#print "self.boyHealth = "+str(self.boyHealth)
-			
+				self.boostCount = 0
+				self.powerBar['value'] = 0
+				if self.hasGhostPower:
+					self.hasGhostPower = False
+					self.cBoy.hide()
+				if self.hasBoost:
+					self.hasBoost = False
+
 		if self.boostCount == 0:
 			self.hasBoost = False
 		
@@ -584,7 +611,7 @@ class MyApp(ShowBase):
 	def boyMoveTask(self, task):
 		if self.curState == STATE_STARTED:
 			self.health()
-			if not self.hasBoost:
+			if not self.hasBoost or self.hasGhostPower:
 				if self.keyMap["forward"] != 0:
 					self.boy.setY(self.boy, -35 * globalClock.getDt())
 					self.isMoving = True
@@ -594,15 +621,25 @@ class MyApp(ShowBase):
 				if self.keyMap["right"] != 0:
 					self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
 					self.isMoving = True
-			else:
+			elif self.hasBoost and not self.hasGhostPower:
 				if self.keyMap["forward"] != 0:
-					self.boy.setY(self.boy, -70 * globalClock.getDt())
+					self.boy.setY(self.boy, -65 * globalClock.getDt())
 					self.isMoving = True
 				if self.keyMap["left"] != 0:
-					self.boy.setH(self.boy.getH() + 600 * globalClock.getDt())
+					self.boy.setH(self.boy.getH() + 525 * globalClock.getDt())
 					self.isMoving = True
 				if self.keyMap["right"] != 0:
-					self.boy.setH(self.boy.getH() - 600 * globalClock.getDt())
+					self.boy.setH(self.boy.getH() - 525 * globalClock.getDt())
+					self.isMoving = True
+			else:
+				if self.keyMap["forward"] != 0:
+					self.boy.setY(self.boy, -35 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["left"] != 0:
+					self.boy.setH(self.boy.getH() + 300 * globalClock.getDt())
+					self.isMoving = True
+				if self.keyMap["right"] != 0:
+					self.boy.setH(self.boy.getH() - 300 * globalClock.getDt())
 					self.isMoving = True
 			if not (self.keyMap["forward"] or self.keyMap["left"] or self.keyMap["right"]):
 				self.isMoving = False
@@ -805,8 +842,12 @@ class MyApp(ShowBase):
 		self.cBoy.node().addSolid(CollisionSphere(0, 0, 3, 2.5))
 		self.cStall = self.stall.attachNewNode(CollisionNode('cStallNode'))
 		self.cStall.node().addSolid(CollisionSphere(0, 0, 0, 1.5))
-		self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
-		self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
+		self.cBottle = self.elixir.attachNewNode(CollisionNode('cBottleNode'))
+		self.cBottle.node().addSolid(CollisionSphere(0, 0, 0, 1))
+		self.cCandle = self.candle.attachNewNode(CollisionNode('cCandleNode'))
+		self.cCandle.node().addSolid(CollisionSphere(0, 0, 0, 50))
+		#self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
+		#self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
 		#self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
 		#self.cHouse.node().addSolid(CollisionSphere(0, 0, 0, 200))
 		#self.cCarousel = self.carousel.attachNewNode(CollisionNode('cCarouselNode'))
@@ -880,6 +921,8 @@ class MyApp(ShowBase):
 		#self.cTent.show()
 		#self.cSkyride1.show()
 		#self.cSkyride2.show()
+		#self.cBottle.show()
+		#self.cCandle.show()
 		
 		self.cTrav=CollisionTraverser()
 		self.collisionHandler1 = CollisionHandlerQueue()
@@ -1485,7 +1528,12 @@ class MyApp(ShowBase):
 		self.elixir.reparentTo(self.render)
 		self.elixir.setScale(10)
 		self.elixir.setPos(self.bridge.getPos())
-		
+
+		self.candle = self.loader.loadModel("models/candle")
+		self.candle.reparentTo(self.render)
+		self.candle.setScale(0.1,0.1,0.05)
+		self.candle.setPos(-280, 270 , 1)
+
 		self.boy = Actor("models/ralph",{"walk":"models/ralph-walk","run":"models/ralph-run"})
 		self.boy.reparentTo(self.render)
 		self.boy.setPos(0, -300, 0)
@@ -1519,11 +1567,11 @@ class MyApp(ShowBase):
 		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
 		
 		#Set up the preferences GUI menu and then hide it
-		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.6))
-		self.fullScreenBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = FULLSCREEN_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.6), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleScreen)
+		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
+		self.fullScreenBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = FULLSCREEN_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleScreen)
 		
 		self.labelSound = DirectLabel(text = SOUND_LABEL, scale = 0.06, pos = (-0.9 , 0, 0.4))
-		self.audioBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = AUDIO_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 0, command = self.toggleAudio)
+		self.audioBut = DirectCheckButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.15, text = AUDIO_BUT_TEXT, text_scale = 0.3, pos = (0.7, 0, 0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, indicatorValue = 1, command = self.toggleAudio)
 		
 		#self.resolutionSlider = DirectSlider(range = (0,100), value = 100, pageSize = 25, pos = (0.7, 0, 0), scale = 0.5, command = self.setResolution)
 		#self.labelResolution = DirectLabel(text = RESOLUTION_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
@@ -1543,10 +1591,10 @@ class MyApp(ShowBase):
 		self.hidePrefs()
 		self.hideGameOverMenu()
 		
-		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.3,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.3)
-		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.3,0.4,0.7), barColor = (0, 1 , 0, 1), scale = 0.3)
-		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.4 , 0, 0.75))
-		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.3 , 0, 0.75))
+		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.35,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.4)
+		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.35,0.4,0.6), barColor = (0, 1 , 0, 1), scale = 0.4)
+		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.25 , 0, 0.75))
+		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.2 , 0, 0.75))
 		self.setGameElementVisiblity(False)
 		
 	def setGameElementVisiblity(self,args):
@@ -1635,10 +1683,12 @@ class MyApp(ShowBase):
 			self.boostCount = 100
 			self.curScore = 0
 			self.noOfLives = 2
-			self.ghostMode = False
+			self.hasGhostPower = False
 			self.countMonster = 300
 			self.boyHealth = 100
 			self.healthBar['value'] = 100
+			self.countLabel['text'] = str(0)
+			self.lifeLabel['text'] = str(2)
 			self.hideGameOverMenu()
 			self.transit.letterboxOff(2.5)
 			self.setGameElementVisiblity(True)
@@ -1662,14 +1712,17 @@ class MyApp(ShowBase):
 			self.boostCount = 100
 			self.curScore = 0
 			self.noOfLives = 2
-			self.ghostMode = False
+			self.hasGhostPower = False
 			self.showMainMenu()
 			self.hideGameOverMenu()
 			self.healthBar['value'] = 100
+			self.countLabel['text'] = str(0)
+			self.lifeLabel['text'] = str(2)
 			self.countMonster = 300
 			self.boyHealth = 100
 			self.setGameElementVisiblity(True)
-		
-		self.curState = nextState		
+			self.startBut['text'] = START_BUT_TEXT
+			
+		self.curState = nextState	
 app = MyApp()
 app.run()
