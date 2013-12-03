@@ -12,7 +12,7 @@ from direct.interval.IntervalGlobal import Sequence, Parallel
 from panda3d.core import Point3, CollisionPlane, Plane
 from direct.gui.OnscreenImage import OnscreenImage
 from panda3d.core import TransparencyAttrib
-import sys, random
+import sys, random, webbrowser
 from direct.gui.DirectGui import *
 from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionSphere, CollisionTraverser
 #import direct.directbase.DirectStart 
@@ -23,10 +23,11 @@ from panda3d.ai import *
 from panda3d.core import TransparencyAttrib
 from direct.gui.OnscreenImage import OnscreenImage
  
+ABOUT_US_TEXT = "THIS GAME HAS BEEN DEVELOPED WITH A LOT OF EFFORTS BY TEAM \n F@DU G@MERS. TEAM MEMBERS INCLUDE SHALIN SHAH AND HARDIK VIRANI.\nCONTACT INFO - {201101179/201101066} @webmail.daiict.ac.in\n ANY FEEDBACK ??"
 START_BUT_TEXT = "PLAY"
 EXIT_BUT_TEXT = "EXIT"
 OPTION_BUT_TEXT = "PREFERENCES"
-CREDITS_BUT_TEXT = "HIGH SCORES"
+CREDITS_BUT_TEXT = "ABOUT US"
 FULLSCREEN_BUT_TEXT = "Full Screen"
 FULLSCREEN_LABEL = "Enable or Disable Full Screen"
 SOUND_LABEL = "Enable or Disable Audio"
@@ -37,6 +38,8 @@ LIGHT_BUT_TEXT = "Lights"
 LIGHTS_LABEL = "Toggle Lights"
 BACK_BUT_TEXT = "<--- BACK"
 EXIT_TEXT = "Are you sure you would like to exit the game? All your progress would be lost?"
+SAMPLE_LINK = "https://www.github.com/shalinshah1993/Carnival-Madness"
+
 
 ########################HEALTH/POWER VALUE CHANGES
 INCR_HEALTH = 0.05
@@ -61,7 +64,9 @@ STATE_EXIT = 7
 class MyApp(ShowBase):
 	def __init__(self):
 		ShowBase.__init__(self)
-		
+
+		#To show the FPS
+		loadPrcFileData('','show-frame-rate-meter 1')
 		#Set background Image
 		imageObject = OnscreenImage(parent = render2dp, image = 'models/heart.png', pos = (0.51, 0, 0.8), scale = (0.05, 0.07, 0.07))
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
@@ -73,18 +78,7 @@ class MyApp(ShowBase):
 		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.png', pos = (-0.9, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject2.setTransparency(TransparencyAttrib.MAlpha)
 		OnscreenText(text = 'X', pos = (-0.35, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
-		
 		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
-		#To show 2D text on Screen
-		#textObject = OnscreenText(text = 'Carnival & Ralph!', pos = (0.1, 0.9), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
-		#textObject = OnscreenText(text = '[Esc] To EXIT', pos = (-1, 0.9), scale = 0.06)
-		#textObject = OnscreenText(text = '[V]To SWAP VIEW', pos = (-1, 0.80), scale = 0.06)
-		#textObject = OnscreenText(text = '[Arrow Keys]To MOVE', pos = (-1, 0.70), scale = 0.06)
-		#textObject = OnscreenText(text = '[L]toggle LIGHTS', pos = (-1, 0.60), scale = 0.06)
-		#textObject = OnscreenText(text = '[E]USE', pos = (-1, 0.50), scale = 0.06)
-		#To show the FPS
-		loadPrcFileData('','show-frame-rate-meter 1')
-				
 		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
 		base.disableMouse()
 		
@@ -118,11 +112,21 @@ class MyApp(ShowBase):
 		self.curScore = 0
 		self.noOfLives = 2
 		
+		#Load all the necessary sounds for the game
 		self.themeSong = self.loader.loadMusic('audio/game.wav')
 		self.hauntedHouseSong = self.loader.loadSfx("audio/horror.ogg")
 		self.butHoverSound = self.loader.loadSfx("audio/but_hover.wav")
-		#self.butClickSound = self.loader.loadSfx("audio/but_hover.wav")
-		self.themeSong.setVolume(1)
+		self.collectSound = self.loader.loadSfx("audio/collect.wav")
+		self.mintCollectSound = self.loader.loadSfx("audio/capsule.wav")
+		self.lifeDownSound = self.loader.loadSfx("audio/gameOver.wav")
+		self.boyHurtSound = self.loader.loadSfx("audio/boyHurt.wav")
+		self.peopleScream = self.loader.loadSfx("audio/scream.wav")
+		self.themeSong.setVolume(0.4)
+		self.collectSound.setVolume(1.0)
+		self.hauntedHouseSong.setVolume(1.0)
+		self.mintCollectSound.setVolume(1.0)
+		self.lifeDownSound.setVolume(1.0)
+		self.boyHurtSound.setVolume(1.0)
 		
 		#Load all the Models and Actors
 		self.loadAllModels()
@@ -391,27 +395,27 @@ class MyApp(ShowBase):
 
 		#Checks if we are near any of the rides inorder to create spatial awareness
 		carouselDist = (self.boy.getPos() - self.carousel.getPos()).length()
-		if carouselDist < 150 or carouselDist > -150:
+		if carouselDist < 150:
 				self.nearCarousel = True
 		else:
 				self.nearCarousel = False
 		octopusDist = (self.boy.getPos() - self.octopus.getPos()).length()
-		if octopusDist < 150 or octopusDist > -150:
+		if octopusDist < 150:
 				self.nearOctopus = True
 		else:
 				self.nearOctopus = False
 		tentDist = (self.boy.getPos() - self.tent.getPos()).length()
-		if tentDist < 150 or tentDist > -150:
+		if tentDist < 150:
 				self.nearTent = True
 		else:
 				self.nearTent = False
 		skyRideDist = (self.boy.getPos() - self.skyRide.getPos()).length()
-		if skyRideDist < 150 or skyRideDist > -150:
+		if skyRideDist < 150:
 				self.nearSkyride = True
 		else:
 				self.nearSkyride = False
 		coasterDist = (self.boy.getPos() - self.coaster.getPos()).length()
-		if coasterDist < 150 or coasterDist > -150:
+		if coasterDist < 150:
 				self.nearCoaster = True
 		else:
 				self.nearCoaster = False
@@ -424,7 +428,7 @@ class MyApp(ShowBase):
 		if base.mouseWatcherNode.hasMouse() and self.curState == STATE_STARTED:
 			base.camera.setH(-90 * base.mouseWatcherNode.getMouseX())
 			base.camera.setP(45* base.mouseWatcherNode.getMouseY())
-			base.camera.lookAt(self.boy)
+			#base.camera.lookAt(self.boy)
 			#self.camera.setX(base.camera, -20 * globalClock.getDt())
 		if self.enableAudio:
 			if not self.themeSong.status() == self.themeSong.PLAYING:
@@ -463,15 +467,37 @@ class MyApp(ShowBase):
 			else:
 				if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
 					self.hauntedHouseSong.stop()
-		# if self.nearCoaster:
-			# #Do something
-			# return
+			if self.nearLollipop:
+				if not self.collectSound.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.collectSound.play()
+					self.sfxManagerList[0].update()
 			if not self.nearBridge:
 				self.boy.setZ(0)
 			if self.nearMonster:
 				self.boyHealth -= 2
 				self.healthBar['value'] = self.boyHealth
-			
+				if not self.boyHurtSound.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.boyHurtSound.play()
+					self.sfxManagerList[0].update()
+			else:
+				if self.boyHurtSound.status() == self.hauntedHouseSong.PLAYING:
+					self.boyHurtSound.stop()
+			if self.nearMint:
+				if not self.mintCollectSound.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.mintCollectSound.play()
+					self.sfxManagerList[0].update()
+			if self.nearCoaster:
+				if not self.peopleScream.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.peopleScream.play()
+					self.sfxManagerList[0].update()
+			else:
+				if self.peopleScream.status() == self.hauntedHouseSong.PLAYING:
+					self.peopleScream.stop()
+					
 		self.cTrav.traverse(render)
 		self.collisionHandler1.sortEntries()
 		if self.collisionHandler1.getNumEntries() == 0:
@@ -533,7 +559,7 @@ class MyApp(ShowBase):
 				#if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 				#	self.nearMonster = True
 				#	self.boyHealth -= 2
-				#	self.boyHealth -= 2;self.healthBar['value'] 	= self.boyHealth
+				#	self.boyHealth -= 2;self.healthBar['value'] = self.boyHealth
 				if "cBottleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boostCount = 100
 					self.powerBar['value'] = 100
@@ -547,7 +573,7 @@ class MyApp(ShowBase):
 					self.hasBoost = False
 			
 			if not self.hasGhostPower:
-				if not (self.nearBridge or self.nearLollipop or self.nearMint or self.nearMonster):
+				if not (self.nearBridge or self.nearLollipop or self.nearMint):
 					self.boy.setPos(self.startPos)
 		return Task.cont
 		
@@ -588,6 +614,11 @@ class MyApp(ShowBase):
 			self.hasBoost = False
 		
 		if (self.boyHealth < 0 or self.boyHealth == 0):
+			if not self.lifeDownSound.status() == AudioSound.PLAYING:
+					if self.enableAudio:
+						self.lifeDownSound.play()
+					self.sfxManagerList[0].update()
+					
 			if self.noOfLives == 0:
 				self.switchState(STATE_STARTED, STATE_GAME_OVER)
 			else:
@@ -675,12 +706,6 @@ class MyApp(ShowBase):
 			#self.health()
 		return Task.again	
 		
-	def gameOverState(self):
-		textObject = OnscreenText(text = 'Game Over You are out of Your health', pos = (0, 0.60), scale = 0.1)
-		self.switchView()
-		self.showGameOverMenu()
-		self.hideMainMenu()
-	
 	def keyUp(self):
 		self.boy.setY(self.boy, -35 * globalClock.getDt())
 		#self.boy.setY(self.boy.getY() + 2)
@@ -831,8 +856,6 @@ class MyApp(ShowBase):
 			self.enableAudio = False
 			if self.themeSong.status() == self.themeSong.PLAYING:
 				self.themeSong.stop()
-			if self.hauntedHouseSong.status() == self.hauntedHouseSong.PLAYING:
-				self.hauntedHouseSong.stop()
 		else:
 			self.enableAudio = True
 			
@@ -928,12 +951,17 @@ class MyApp(ShowBase):
 		self.collisionHandler1 = CollisionHandlerQueue()
 		self.cTrav.addCollider(self.cBoy, self.collisionHandler1)
 		
+	def aboutUs(self, args):
+		print args
+		if args == 1:
+			webbrowser.open(SAMPLE_LINK)
+		self.aboutUsDialog.cleanup()
+		
 	def quit(self, args):
 		if args:
 			taskMgr.doMethodLater(2.6 ,sys.exit,'Exiting')
 			self.transit.irisOut(2.5)
-		else:
-			self.askDialog.cleanup()
+		self.askDialog.cleanup()
 	
 	def loadAllModels(self):
 	  
@@ -1531,8 +1559,8 @@ class MyApp(ShowBase):
 
 		self.candle = self.loader.loadModel("models/candle")
 		self.candle.reparentTo(self.render)
-		self.candle.setScale(0.1,0.1,0.05)
-		self.candle.setPos(-280, 270 , 1)
+		self.candle.setScale(0.15,0.15,0.05)
+		self.candle.setPos(-340, 270 , 5)
 
 		self.boy = Actor("models/ralph",{"walk":"models/ralph-walk","run":"models/ralph-run"})
 		self.boy.reparentTo(self.render)
@@ -1564,7 +1592,7 @@ class MyApp(ShowBase):
 		self.startBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = START_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_RESET, STATE_STARTED])
 		self.exitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = EXIT_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_PAUSED, STATE_EXIT])
 		self.optionsBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = OPTION_BUT_TEXT, text_scale = 0.2, pos = (0, 0, 0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_RESET, STATE_PREFS])
-		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
+		self.aboutBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = CREDITS_BUT_TEXT, text_scale = 0.2, pos = (0, 0, -0.1), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [None, None])
 		
 		#Set up the preferences GUI menu and then hide it
 		self.labelFullScreen = DirectLabel(text = FULLSCREEN_LABEL, scale = 0.06, pos = (-0.9 , 0, 0))
@@ -1722,7 +1750,11 @@ class MyApp(ShowBase):
 			self.boyHealth = 100
 			self.setGameElementVisiblity(True)
 			self.startBut['text'] = START_BUT_TEXT
-			
-		self.curState = nextState	
+		
+		if curState != None and nextState != None:
+			self.curState = nextState	
+		else:
+			self.aboutUsDialog = YesNoCancelDialog(dialogName="okDialog", text = ABOUT_US_TEXT, buttonTextList = ["YES", "NO", "GO BACK"], buttonSize = [-0.5,0.5,-0.05,0.1], fadeScreen = 1, command = self.aboutUs)
+		
 app = MyApp()
 app.run()

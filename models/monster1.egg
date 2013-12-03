@@ -12,6 +12,7 @@
   <Scalar> magfilter { linear }
 }
 <Group> monster1 {
+<Collide> cMonster {Polyset descend keep}
   <Dart> { 1 }
   <Group> groundPlane_transform {
   }
