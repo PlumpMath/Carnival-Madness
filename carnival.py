@@ -26,6 +26,7 @@ from direct.gui.OnscreenImage import OnscreenImage
 ABOUT_US_TEXT = "THIS GAME HAS BEEN DEVELOPED WITH A LOT OF EFFORTS BY TEAM \n F@DU G@MERS. TEAM MEMBERS INCLUDE SHALIN SHAH AND HARDIK VIRANI.\nCONTACT INFO - {201101179/201101066} @webmail.daiict.ac.in\n ANY FEEDBACK ??"
 START_BUT_TEXT = "PLAY"
 EXIT_BUT_TEXT = "EXIT"
+HELP_BUT_TEXT = "HELP"
 OPTION_BUT_TEXT = "PREFERENCES"
 CREDITS_BUT_TEXT = "ABOUT US"
 FULLSCREEN_BUT_TEXT = "Full Screen"
@@ -54,6 +55,7 @@ STATE_GAME_OVER = 4
 STATE_PAUSED = 5
 STATE_SCORE = 6
 STATE_EXIT = 7 
+STATE_HELP = 8 
  
 #######################HEALTH VALUES
 #Total Health - 100
@@ -74,10 +76,11 @@ class MyApp(ShowBase):
 		imageObject.setTransparency(TransparencyAttrib.MAlpha)
 		imageObject1 = OnscreenImage(parent = render2dp, image = 'models/face.png', pos = (-0.3, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject1.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = 'X', pos = (-1.45, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		OnscreenText(text = 'X', pos = (-1.45, 0.75), scale = 0.09, fg =( 1, 1, 0, 1), bg = (0.1,0.1,0.1, 1))
 		imageObject2 = OnscreenImage(parent = render2dp, image = 'models/lollipop.png', pos = (-0.9, 0, 0.8), scale = (0.07, 0.1, 0.1))
 		imageObject2.setTransparency(TransparencyAttrib.MAlpha)
-		OnscreenText(text = 'X', pos = (-0.35, 0.75), scale = 0.09, fg =( 1, 1, 1, 1), bg = (0.1,0.1,0.1, 1))
+		OnscreenText(text = 'X', pos = (-0.35, 0.75), scale = 0.09, fg =( 1, 1, 0, 1), bg = (0.1,0.1,0.1, 1))
+		
 		#base.cam2dp.node().getDisplayRegion(0).setSort(-20)
 		#Disable Camera change by mouse and hide mouse pointer, Set Full creen
 		base.disableMouse()
@@ -136,11 +139,8 @@ class MyApp(ShowBase):
 		self.AIchar = AICharacter("boy",self.monster, 150, 5, 150)
 		self.AIworld.addAiChar(self.AIchar)
 		self.AIbehaviors = self.AIchar.getAiBehaviors()
-		#self.AIbehaviors.pathFollow(1.0)
 		self.AIbehaviors.pursue(self.boy,1.0) 
 		self.monster.loop("run")
-		#self.AIbehaviors.addToPath(self.boy.getPos())
-		#self.AIbehaviors.startFollow()
 		
 		#Set up the Collision Nodes 
 		self.setupCollisionNodes()
@@ -163,13 +163,6 @@ class MyApp(ShowBase):
 		self.accept("arrow_up-up",self.keys, ["forward", 0])
 		self.accept("arrow_left-up",self.keys, ["left",0])
 		self.accept("arrow_right-up",self.keys, ["right", 0])
-		#self.accept("arrow_down-repeat", self.keys, ["right",1])
-		#self.accept("arrow_down-up", self.keys, ["back", 0])
-		#self.accept("arrow_down-up", self.stopWalk)
-		#self.accept("arrow_up-up",self.stopWalk)
-		#self.accept("arrow_left-up",self.stopWalk)
-		#self.accept("arrow_right-up",self.stopWalk)
-		#self.accept("v",self.switchView)
 		self.accept("e",self.switchToJet)
 		self.accept("escape", self.switchState, [STATE_STARTED, STATE_PAUSED])
 		self.accept("l",self.changeLights)
@@ -210,11 +203,6 @@ class MyApp(ShowBase):
 		seq9 = self.hawk.posInterval(4, Point3(0, 0, 100))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
 		seq.loop()
-		#if not self.worldView:
-			#seq.loop()
-		#else:
-			#if seq.isPlaying():
-				#seq.pause()
 		
 		seq1 = self.hawk1.posInterval(4, Point3(-100, 50, 50))
 		seq3 = self.hawk1.posInterval(4, Point3(-50, 250, 50))
@@ -227,11 +215,6 @@ class MyApp(ShowBase):
 		seq9 = self.hawk1.posInterval(4, Point3(200, 0, 100))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
 		seq.loop()
-		#if not self.worldView:
-			#seq.loop()
-		#else:
-			#if seq.isPlaying():
-				#seq.pause()
 		
 		seq1 = self.flamingo.posInterval(6, Point3(30, 70, 0))
 		seq3 = self.flamingo.posInterval(2, Point3(70, 80, 0))
@@ -247,11 +230,6 @@ class MyApp(ShowBase):
 		seq12 = self.flamingo.hprInterval(1, Point3(0, 0, 0), startHpr = Point3(-90, 0, 0))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9, seq10, seq11, seq12)
 		seq.loop()
-		#if not self.worldView:
-			#seq.loop()
-		#else:
-			#if seq.isPlaying():
-				#seq.pause()
 		
 		seq1 = self.blueBird.posInterval(8, Point3(-250, 200, 50))
 		seq3 = self.blueBird.posInterval(8, Point3(-250, -200, 50))
@@ -264,11 +242,6 @@ class MyApp(ShowBase):
 		seq9 = self.blueBird.posInterval(5, Point3(200, 0, 100))
 		seq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9)
 		seq.loop()
-		#if not self.worldView:
-			#seq.loop()
-		#else:
-			#if seq.isPlaying():
-				#seq.pause()
 		
 		seq1 = self.Dropship.posInterval(5, Point3(-130, -120, 40))
 		seq2 = self.Dropship.posInterval(6, Point3(-130, 70, 40))
@@ -280,11 +253,6 @@ class MyApp(ShowBase):
 		seq8 = self.Dropship.hprInterval(3, Point3( 180, 0, 0), startHpr = Point3(0, 0, 0))
 		self.skyRideSeq = Sequence(seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8)
 		self.skyRideSeq.loop()
-		#if not self.worldView:
-			#self.skyRideSeq.loop()
-		#else:
-			#if self.skyRideSeq.isPlaying():
-				#self.skyRideSeq.stop()
 	
 	def changeLights(self):
 		if self.lights == False:
@@ -517,6 +485,7 @@ class MyApp(ShowBase):
 			#self.nearBridge = False
 			for i in range(self.collisionHandler1.getNumEntries()):
 				entry = self.collisionHandler1.getEntry(i).getIntoNodePath().getName()
+				#print entry
 				# if "cCarouselNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					# self.nearCarousel = True
 				# elif "cOctopusNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
@@ -556,10 +525,13 @@ class MyApp(ShowBase):
 					self.boy.setZ(self.collisionHandler1.getEntry(i).getSurfacePoint(self.render)[2] - 2.5)
 					self.nearBridge = True
 
-				#if "cMonsterNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
-				#	self.nearMonster = True
-				#	self.boyHealth -= 2
-				#	self.boyHealth -= 2;self.healthBar['value'] = self.boyHealth
+				if "cHeadNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
+					if self.boyHealth > 10:
+					      self.boyHealth -= 10
+					else:
+					      self.boyHealth = 0
+					self.healthBar['value'] = self.boyHealth
+					self.nearMonster = True
 				if "cBottleNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					self.boostCount = 100
 					self.powerBar['value'] = 100
@@ -759,24 +731,18 @@ class MyApp(ShowBase):
 		self.optionsBut.hide()
 		self.exitBut.hide()
 		self.aboutBut.hide()
-		#self.switchView()
-		#self.hasStarted = True
-		#self.hasResumed = True
-	
+		self.helpBut.hide()
+		
 	def showMainMenu(self):
 		self.startBut.show()
 		self.optionsBut.show()
 		self.exitBut.show()
 		self.aboutBut.show()
-		#self.hasResumed = False
-		#self.hasStarted = False
-	
+		self.helpBut.show()
+		
 	def showPrefs(self):
-		#self.hideMainMenu()
-		#self.labelResolution.show()
 		self.labelFullScreen.show()
 		self.labelSound.show()
-		#self.resolutionSlider.show()
 		self.fullScreenBut.show()
 		self.backBut.show()
 		self.audioBut.show()
@@ -784,32 +750,38 @@ class MyApp(ShowBase):
 		self.lightsBut.show()
 	
 	def hidePrefs(self):
-		#if self.isFullScreen:
-			#props = WindowProperties()
-			#if self.screenResolutionVal == 1:
-				#props.setSize(1600, 900)
-			#elif self.screenResolutionVal == 2:
-				#props.setSize(1366, 768)
-			#elif self.screenResolutionVal == 3:
-				#props.setSize(1024, 768)
-			#elif self.screenResolutionVal == 4:
-				#props.setSize(800, 600)
-			#props.setFullscreen(True)
-			#base.win.requestProperties(props)
-		#self.labelResolution.hide()
 		self.labelFullScreen.hide()
 		self.labelSound.hide()
-		#self.resolutionSlider.hide()
 		self.fullScreenBut.hide()
 		self.audioBut.hide()
 		self.backBut.hide()
 		self.showMainMenu()
 		self.labelLights.hide()
 		self.lightsBut.hide()
-		#self.hideGameOverMenu()
+		
+	def hideHelpMenu(self):
+		self.lollipopCard.hide()
+		self.lollipopCard1.hide()
+		self.lifeCard.hide()
+		self.lifeCard1.hide()
+		self.staminaCard.hide()
+		self.staminaCard1.hide()
+		self.boostCard.hide()
+		self.boostCard1.hide()
+		self.backBut2.hide()
 	
+	def showHelpMenu(self):
+		self.lollipopCard.show()
+		self.lollipopCard1.show()
+		self.lifeCard.show()
+		self.lifeCard1.show()
+		self.staminaCard.show()
+		self.staminaCard1.show()
+		self.boostCard.show()
+		self.boostCard1.show()
+		self.backBut2.show()
+		
 	def hideGameOverMenu(self):
-		#self.showMainMenu()
 		self.playAgainBut.hide()
 		self.submitScore.hide()
 		self.submitBut.hide()
@@ -869,6 +841,14 @@ class MyApp(ShowBase):
 		self.cBottle.node().addSolid(CollisionSphere(0, 0, 0, 1))
 		self.cCandle = self.candle.attachNewNode(CollisionNode('cCandleNode'))
 		self.cCandle.node().addSolid(CollisionSphere(0, 0, 0, 50))
+		self.cHead1 = self.blueHead.attachNewNode(CollisionNode('cHeadNode'))
+		self.cHead1.node().addSolid(CollisionSphere(0, 0, 0, 8))
+		self.cHead2 = self.blueHead1.attachNewNode(CollisionNode('cHeadNode'))
+		self.cHead2.node().addSolid(CollisionSphere(0, 0, 0, 8))
+		self.cHead3 = self.blueHead2.attachNewNode(CollisionNode('cHeadNode'))
+		self.cHead3.node().addSolid(CollisionSphere(0, 0, 0, 8))
+		self.cHead4 = self.blueHead3.attachNewNode(CollisionNode('cHeadNode'))
+		self.cHead4.node().addSolid(CollisionSphere(0, 0, 0, 8))
 		#self.cMonster = self.monster.attachNewNode(CollisionNode('cMonsterNode'))
 		#self.cMonster.node().addSolid(CollisionSphere(0, 0, 0, 3))
 		#self.cHouse = self.house.attachNewNode(CollisionNode('cHouseNode'))
@@ -946,6 +926,10 @@ class MyApp(ShowBase):
 		#self.cSkyride2.show()
 		#self.cBottle.show()
 		#self.cCandle.show()
+		#self.cHead1.show()
+		#self.cHead2.show()
+		#self.cHead3.show()
+		#self.cHead4.show()
 		
 		self.cTrav=CollisionTraverser()
 		self.collisionHandler1 = CollisionHandlerQueue()
@@ -963,8 +947,133 @@ class MyApp(ShowBase):
 			self.transit.irisOut(2.5)
 		self.askDialog.cleanup()
 	
+	def load2dObjects(self):
+		text = TextNode('Lollipop')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("1. This indicates the number of Lollipop's you've collected! Collect more to score more")
+		self.lollipopCard = aspect2d.attachNewNode(text)
+		self.lollipopCard.setScale(0.07)
+		self.lollipopCard.setPos(-1.3,0,0.5)
+		
+		text = TextNode('Lollipop')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("01.")
+		self.lollipopCard1 = aspect2d.attachNewNode(text)
+		self.lollipopCard1.setScale(0.07)
+		self.lollipopCard1.setPos(-1.7,0,0.73)
+		
+		text = TextNode('Life')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("2. This indicates the number of lives.You start with three lives.")
+		self.lifeCard = aspect2d.attachNewNode(text)
+		self.lifeCard.setScale(0.07)
+		self.lifeCard.setPos(-0.7,0,0.2)
+		
+		text = TextNode('Life')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("02.")
+		self.lifeCard1 = aspect2d.attachNewNode(text)
+		self.lifeCard1.setScale(0.07)
+		self.lifeCard1.setPos(-0.72,0,0.73)
+		
+		text = TextNode('Health')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("3. This indicates your weariness or stamina level. More you run more you become tired,less would be this value")
+		self.staminaCard = aspect2d.attachNewNode(text)
+		self.staminaCard.setScale(0.07)
+		self.staminaCard.setPos(0.3,0,0)
+		
+		text = TextNode('Health')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("03.")
+		self.staminaCard1 = aspect2d.attachNewNode(text)
+		self.staminaCard1.setScale(0.07)
+		self.staminaCard1.setPos(0.75,0,0.73)
+		
+		text = TextNode('Boost')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("4. This indicates the amount of boost you've got. Its limited! You can collect more by picking up elixir or candle which you can find in map")
+		self.boostCard = aspect2d.attachNewNode(text)
+		self.boostCard.setScale(0.07)
+		self.boostCard.setPos(1 ,0, -0.4)
+		
+		text = TextNode('Boost')
+		text.setSmallCaps(True)
+		text.setWordwrap(15.0)
+		text.setAlign(TextNode.ACenter)
+		text.setFrameColor(1, 1, 1, 1)
+		text.setCardColor(1, 1, 0.5, 1)
+		text.setCardDecal(True)
+		text.setTextColor(0, 0, 0, 1)
+		text.setCardAsMargin(0, 0, 0, 0)
+		text.setFrameAsMargin(0.2, 0.2, 0.1, 0.1)
+		text.setText("04.")
+		self.boostCard1 = aspect2d.attachNewNode(text)
+		self.boostCard1.setScale(0.07)
+		self.boostCard1.setPos(0.75 ,0, 0.56)
+	
+		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.35,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.4)
+		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.35,0.4,0.6), barColor = (0, 1 , 0, 1), scale = 0.4)
+		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.25 , 0, 0.75))
+		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.2 , 0, 0.75))
+	
 	def loadAllModels(self):
-	  
 		#FadeIn the First Time when app starts
 		self.transit = Transitions(loader)
 		self.transit.irisIn(2.5)
@@ -1247,6 +1356,8 @@ class MyApp(ShowBase):
 		self.lampPost.setScale(2, 2, 2)
 		self.lampPost.setPos(40, -185, 0)
 		self.lampPost.setHpr(-30,0,0)
+		self.text = TextNode('Lollipop')
+		
 		self.lampPost1 = self.loader.loadModel("models/LampPost")
 		self.lampPost1.reparentTo(self.render)
 		self.lampPost1.setScale(2, 2, 2)
@@ -1282,49 +1393,49 @@ class MyApp(ShowBase):
 		self.Sphinx1.setPos(-280, 190, 8)
 		self.Sphinx1.setHpr(-90,0,0)
 		
-		self.bluehead = Actor("models/head",{"attack":"models/head-hurt"})
-		self.bluehead.reparentTo(self.render)
-		self.bluehead.setScale(2)
-		self.bluehead.setPos(-210, 250, 15)
-		self.bluehead.setHpr(0,0,0)
-		self.bluehead.loop('attack')
-		seq1 = self.bluehead.posInterval(4, Point3(-210, 180, 15))
-		seq2 = self.bluehead.posInterval(4, Point3(-210, 250, 15))
-		self.blueheadseq = Sequence(seq1, seq2)
-		self.blueheadseq.loop()
+		self.blueHead = Actor("models/head",{"attack":"models/head-hurt"})
+		self.blueHead.reparentTo(self.render)
+		self.blueHead.setScale(2)
+		self.blueHead.setPos(-210, 250, 15)
+		self.blueHead.setHpr(0,0,0)
+		self.blueHead.loop('attack')
+		seq1 = self.blueHead.posInterval(4, Point3(-210, 180, 15))
+		seq2 = self.blueHead.posInterval(4, Point3(-210, 250, 15))
+		self.blueHeadseq = Sequence(seq1, seq2)
+		self.blueHeadseq.loop()
 		
-		self.bluehead1 = Actor("models/head",{"attack":"models/head-hurt"})
-		self.bluehead1.reparentTo(self.render)
-		self.bluehead1.setScale(2)
-		self.bluehead1.setPos(-270, 180, 15)
-		self.bluehead1.setHpr(0,0,0)
-		self.bluehead1.loop('attack')
-		seq3 = self.bluehead1.posInterval(4, Point3(-270, 130, 15))
-		seq4 = self.bluehead1.posInterval(4, Point3(-270, 180, 15))
-		self.blueheadseq1 = Sequence(seq3, seq4)
-		self.blueheadseq1.loop()
+		self.blueHead1 = Actor("models/head",{"attack":"models/head-hurt"})
+		self.blueHead1.reparentTo(self.render)
+		self.blueHead1.setScale(2)
+		self.blueHead1.setPos(-270, 180, 15)
+		self.blueHead1.setHpr(0,0,0)
+		self.blueHead1.loop('attack')
+		seq3 = self.blueHead1.posInterval(4, Point3(-270, 130, 15))
+		seq4 = self.blueHead1.posInterval(4, Point3(-270, 180, 15))
+		self.blueHeadseq1 = Sequence(seq3, seq4)
+		self.blueHeadseq1.loop()
 		
-		self.bluehead2 = Actor("models/head",{"attack":"models/head-hurt"})
-		self.bluehead2.reparentTo(self.render)
-		self.bluehead2.setScale(2)
-		self.bluehead2.setPos(70, -115, 15)
-		self.bluehead2.setHpr(-90,0,0)
-		self.bluehead2.loop('attack')
-		seq5 = self.bluehead2.posInterval(2, Point3(0, -120, 15))
-		seq6 = self.bluehead2.posInterval(2, Point3(70, -115, 15))
-		self.blueheadseq2 = Sequence(seq5, seq6)
-		self.blueheadseq2.loop()
+		self.blueHead2 = Actor("models/head",{"attack":"models/head-hurt"})
+		self.blueHead2.reparentTo(self.render)
+		self.blueHead2.setScale(2)
+		self.blueHead2.setPos(70, -115, 15)
+		self.blueHead2.setHpr(-90,0,0)
+		self.blueHead2.loop('attack')
+		seq5 = self.blueHead2.posInterval(2, Point3(0, -120, 15))
+		seq6 = self.blueHead2.posInterval(2, Point3(70, -115, 15))
+		self.blueHeadseq2 = Sequence(seq5, seq6)
+		self.blueHeadseq2.loop()
 		
-		self.bluehead3 = Actor("models/head",{"attack":"models/head-hurt"})
-		self.bluehead3.reparentTo(self.render)
-		self.bluehead3.setScale(2)
-		self.bluehead3.setPos(0, 140, 15)
-		self.bluehead3.setHpr(90,0,0)
-		self.bluehead3.loop('attack')
-		seq6 = self.bluehead3.posInterval(2, Point3(70, 140, 15))
-		seq7 = self.bluehead3.posInterval(2, Point3(0, 140, 15))
-		self.blueheadseq3 = Sequence(seq6, seq7)
-		self.blueheadseq3.loop()
+		self.blueHead3 = Actor("models/head",{"attack":"models/head-hurt"})
+		self.blueHead3.reparentTo(self.render)
+		self.blueHead3.setScale(2)
+		self.blueHead3.setPos(0, 140, 15)
+		self.blueHead3.setHpr(90,0,0)
+		self.blueHead3.loop('attack')
+		seq6 = self.blueHead3.posInterval(2, Point3(70, 140, 15))
+		seq7 = self.blueHead3.posInterval(2, Point3(0, 140, 15))
+		self.blueHeadseq3 = Sequence(seq6, seq7)
+		self.blueHeadseq3.loop()
 		
 		
 		self.ringToss = self.loader.loadModel("models/ringtoss")
@@ -1403,12 +1514,6 @@ class MyApp(ShowBase):
 		self.sun.setPos(350, 350, 150)
 		self.sun.setHpr(90,0,0)
 		self.sun.loop('shine')
-		
-		# dlight = DirectionalLight('dlight')
-		# dlight.setColor(VBase4(1, 1, 1, 1))
-		# dlnp = render.attachNewNode(dlight)
-		# dlnp.setHpr(0, 0, 0)
-		# self.sun.setLight(dlnp)
 		
 		self.sky = self.loader.loadModel("models/skysphere")
 		self.sky.reparentTo(self.render)
@@ -1549,8 +1654,6 @@ class MyApp(ShowBase):
 			y = random.randint(-300,300)
 			mint.setPos(x, y, 5)
 			self.mint.append(mint)
-			#mint.setR(90)
-			#mint.setH(90)
 			
 		self.elixir = self.loader.loadModel("models/Bottle")
 		self.elixir.reparentTo(self.render)
@@ -1615,14 +1718,16 @@ class MyApp(ShowBase):
 		self.submitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "SUBMIT SCORE", text_scale = 0.2, pos = (0.8, 1, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.hidePrefs)
 		self.playAgainBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "PLAY AGAIN", text_scale = 0.2, pos = (0, 1, 0), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_STARTED])
 		self.backBut1 = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = BACK_BUT_TEXT, text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_RESET])	
-			
+		
+		#Here helpBut is in main menu while the later one is in the help menu both at the same location giving a feel that same but is used
+		self.helpBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = 0.2, text = HELP_BUT_TEXT, text_scale = 0.2, pos = (1, 0, -0.8), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_PAUSED, STATE_HELP])
+		self.backBut2 = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = BACK_BUT_TEXT, text_scale = 0.3, pos = (1, 0, -0.8), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_HELP, STATE_RESET])	
+		
 		self.hidePrefs()
 		self.hideGameOverMenu()
 		
-		self.healthBar = DirectWaitBar(text = "", value = 100, range = 100, pos = (1.35,0.4,0.8), barColor = (1, 0, 0, 1), scale = 0.4)
-		self.powerBar = DirectWaitBar(text = "", value = 0, range = 100, pos = (1.35,0.4,0.6), barColor = (0, 1 , 0, 1), scale = 0.4)
-		self.countLabel = DirectLabel(text = str(self.curScore), scale = 0.2, pos = (-1.25 , 0, 0.75))
-		self.lifeLabel = DirectLabel(text = str(self.noOfLives), scale = 0.2, pos = (-0.2 , 0, 0.75))
+		self.load2dObjects()
+		self.hideHelpMenu()
 		self.setGameElementVisiblity(False)
 		
 	def setGameElementVisiblity(self,args):
@@ -1663,6 +1768,7 @@ class MyApp(ShowBase):
 			self.optionsBut.hide()
 			self.aboutBut.hide()
 			self.optionsBut.hide()
+			self.helpBut.hide()
 			self.startBut['text'] = "RESUME GAME"
 			props = WindowProperties()
 			props.setCursorHidden(False) 
@@ -1690,7 +1796,11 @@ class MyApp(ShowBase):
 			#maps = loader.loadModel('models/button_maps')
 			#geomList = [(maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable'))]
 			self.askDialog = YesNoDialog(dialogName="YesNoCancelDialog", text = EXIT_TEXT, buttonTextList = ["YES", "NO"], buttonSize = [-0.5,0.5,-0.05,0.1], fadeScreen = 1, command = self.quit)
-		
+		elif curState == STATE_PAUSED and nextState == STATE_HELP: 
+			self.hideMainMenu()
+			self.showHelpMenu()
+			
+		#All thes have game over as start state
 		elif curState == STATE_GAME_OVER and nextState == STATE_STARTED:
 			self.boy.setPos(5, -210, 0)
 			self.monster.setPos(0,-325, 5)
@@ -1750,6 +1860,11 @@ class MyApp(ShowBase):
 			self.boyHealth = 100
 			self.setGameElementVisiblity(True)
 			self.startBut['text'] = START_BUT_TEXT
+		
+		#This contains all the states with help as curent state
+		elif curState == STATE_HELP and nextState == STATE_RESET:
+			self.hideHelpMenu()
+			self.showMainMenu()
 		
 		if curState != None and nextState != None:
 			self.curState = nextState	
