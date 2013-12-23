@@ -527,7 +527,7 @@ class MyApp(ShowBase):
 
 				if "cHeadNode" == self.collisionHandler1.getEntry(i).getIntoNodePath().getName():
 					if self.boyHealth > 10:
-					      self.boyHealth -= 10
+					      self.boyHealth -= 2
 					else:
 					      self.boyHealth = 0
 					self.healthBar['value'] = self.boyHealth
@@ -1769,7 +1769,7 @@ class MyApp(ShowBase):
 		
 		self.gameOverLabel = DirectLabel(text = GAME_OVER_LABEL + str(self.curScore), scale = 0.1, pos = (-0.3 , 0, 0.6))
 		self.submitScore = DirectEntry(text = "" , scale = (0.1, 0.07, 0.06),pos = (-1, 0, 0.3), initialText="Gamers call you?", numLines = 2,focus=1)		
-		self.submitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "SUBMIT SCORE", text_scale = 0.2, pos = (0.8, 1, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.hidePrefs)
+		self.submitBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "SUBMIT SCORE", text_scale = 0.2, pos = (0.8, 1, 0.3), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound)
 		self.playAgainBut = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.2,0.2,0.2), text = "PLAY AGAIN", text_scale = 0.2, pos = (0, 1, 0), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_STARTED])
 		self.backBut1 = DirectButton(geom = (maps.find('**/but_steady'),maps.find('**/but_click'),maps.find('**/but_hover'),  maps.find('**/but_disable')), scale = (0.3,0.2,0.2), text = BACK_BUT_TEXT, text_scale = 0.3, pos = (0, 0, -0.4), rolloverSound = self.butHoverSound, clickSound = self.butHoverSound, command = self.switchState, extraArgs = [STATE_GAME_OVER, STATE_RESET])	
 		
